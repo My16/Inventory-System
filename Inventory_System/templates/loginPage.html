@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+    {% load static %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory System</title>
+    <link rel="icon" href="{% static 'img/mharsmc.png' %}" type="image/x-icon" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-left">
+            <div class="welcome-container">
+                <img src="{% static 'img/login-logo.png' %}" alt="Small Logo" class="small-logo">
+                <h4>Welcome, Please Log In</h4>
+            </div>
+                <hr>
+                <div>
+                    <form action="{% url 'login' %}" method="POST">
+                        {% csrf_token %}
+                        <!-- username field -->
+                        <div class="input-group">
+                            <input type="text" placeholder="Username" class="form-control" name="username" required>
+                        </div>
+                        <!-- password field -->
+                        <div class="input-group">
+                            <input type="password" id="password" placeholder="Password" class="form-control" name="password" required>
+                            <span class="toggle-password" onclick="togglePassword()">
+                                <i class="fa fa-eye"></i>
+                            </span>
+                        </div>
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert">{{ message }}</div>
+                            {% endfor %}
+                        {% endif %}
+                        <!-- button for submit -->
+                        <button type="submit" name="submit" value="Login">Log In</button>
+                    </form>
+                </div>
+
+                <a class="forgot-password" href="#">Forgot Password?</a>
+
+        </div>
+        <div class="login-right">
+            <img src="{% static 'img/mharsmc.png' %}" alt="Mharsmc Logo">
+            <h2>Information Technology Inventory System</h2>
+            <p style="font-size: 14px">Mayor Hilarion A. Ramiro Sr. Medical Center</p>
+            <small style="font-size: 11px;">A project of MHARSMC-IT Team.</small>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var passwordField = document.getElementById("password");
+            var toggleIcon = document.querySelector(".toggle-password");
+    
+            // Show password while holding the mouse down
+            toggleIcon.addEventListener("mousedown", function () {
+                passwordField.type = "text";
+            });
+    
+            // Hide password when releasing the mouse
+            toggleIcon.addEventListener("mouseup", function () {
+                passwordField.type = "password";
+            });
+    
+            // Also hide if the mouse leaves the icon (for better usability)
+            toggleIcon.addEventListener("mouseleave", function () {
+                passwordField.type = "password";
+            });
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+        setTimeout(function () {
+                let alertBox = document.querySelector(".alert");
+                if (alertBox) {
+                    alertBox.classList.add("fade-out");
+                    setTimeout(() => alertBox.remove(), 1000); // Removes from DOM
+                }
+            }, 3000); // 3 seconds delay before fade
+        });
+
+    </script>
+    
+</body>
+</html>

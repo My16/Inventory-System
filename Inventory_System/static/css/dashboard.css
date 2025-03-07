@@ -1,0 +1,129 @@
+.card {
+    color: white;
+}
+.bg-green { background-color: #4CAF50; }
+.bg-orange { background-color: #FF9800; }
+.bg-blue { background-color: #607D8B; }
+
+footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background-color: #0f6b5f; /* Adjust color as needed */
+    color: white;
+    text-align: center;
+    padding: 10px 0;
+    font-size: 12px;
+}
+
+.bg-teal {
+    background-color: #0f6b5f; /* Adjust color */
+}
+
+.bg-teal {
+    background-color: #0f6b5f; /* Adjust as needed */
+}
+
+/* Sub Navbar */
+.sub-navbar {
+    display: none; /* Hidden by default */
+    position: absolute;
+    width: 100%;
+    top: 56px; /* Adjust based on main navbar height */
+    left: 0;
+    z-index: 1000;
+    padding: 10px 0;
+}
+
+/* Show sub-navbar when hovering "My Portal" */
+.navbar-nav .dropdown:hover + #subNavbar,
+#subNavbar:hover {
+    display: block;
+}
+
+/* Custom Styling */
+.bg-teal { background-color: #0f6b5f; }
+.navbar-brand img { height: 40px; }
+.profile-img { width: 30px; height: 30px; border-radius: 50%; }
+
+/* Fixed secondary navbar */
+.secondary-navbar {
+    background: #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 999;
+}
+
+.navbar-nav .nav-item {
+    margin-right: 15px; /* Space between items */
+    position: relative;
+    padding-right: 15px; /* Ensure spacing */
+}
+
+.navbar-nav .nav-item:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 50%; /* Adjust height as needed */
+    background-color: #ccc; /* Separator color */
+}
+
+
+/* Dropdown Hover */
+.nav-item.dropdown:hover .dropdown-menu {
+    display: block;
+}
+
+.navbar-brand img {
+    height: 40px; /* Adjust the height */
+    width: auto;  /* Maintain aspect ratio */
+}
+
+.profile-img {
+    width: 30px;  /* Adjust width */
+    height: 30px; /* Adjust height */
+    border-radius: 50%; /* Keeps it circular */
+    object-fit: cover;  /* Ensures the image fits properly */
+}
+
+.logo {
+    height: 50px; /* Adjust as needed */
+    width: auto;
+}
+
+.profile-img {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.navbar-brand div h6 {
+    font-size: 12px;
+    color: white; /* Adjust for readability */
+}
+
+.navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 1px; /* Adjust spacing between logo and text */
+}
+
+.navbar-brand img {
+    height: 50px; /* Adjust logo size */
+    width: auto;
+}
+
+.navbar-brand .brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2; /* Adjust text spacing */
+}
+
+.navbar {
+    padding: 1px 1px; /* Adjust overall navbar spacing */
+}
