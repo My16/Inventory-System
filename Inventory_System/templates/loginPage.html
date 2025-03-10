@@ -32,6 +32,9 @@
                                 <i class="fa fa-eye"></i>
                             </span>
                         </div>
+                        <!-- allert for caps lock -->
+                        <div id="caps-warning">⚠ Caps Lock is ON!</div>
+                        <!-- allert for wrong pass or user -->
                         {% if messages %}
                             {% for message in messages %}
                                 <div class="alert">{{ message }}</div>
@@ -82,6 +85,18 @@
                     setTimeout(() => alertBox.remove(), 1000); // Removes from DOM
                 }
             }, 3000); // 3 seconds delay before fade
+        });
+
+
+        const passwordField = document.getElementById("password");
+        const capsWarning = document.getElementById("caps-warning");
+
+        passwordField.addEventListener("keyup", function (event) {
+            if (event.getModifierState("CapsLock")) {
+                capsWarning.style.display = "block";
+            } else {
+                capsWarning.style.display = "none";
+            }
         });
 
     </script>

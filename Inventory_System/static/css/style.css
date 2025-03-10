@@ -184,3 +184,12 @@ button:hover {
     0% { opacity: 1; }
     100% { opacity: 0; }
 }
+
+#caps-warning {
+    display: none;
+    color: red;
+    font-size: 14px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    text-align: center;
+}
