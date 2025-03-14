@@ -23,7 +23,8 @@ body {
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
-.login-left, .login-right {
+.login-left,
+.login-right {
     padding: 40px;
     display: flex;
     flex-direction: column;
@@ -37,23 +38,25 @@ body {
 
 .welcome-container {
     display: flex;
-    align-items: center; /* Align logo and text vertically */
-    gap: 10px; /* Add spacing between logo and text */
+    align-items: center;
+    /* Align logo and text vertically */
+    gap: 10px;
+    /* Add spacing between logo and text */
     margin-bottom: 10px;
 }
 
-hr {  
-    height: 2px;  
-    background-color: #00ADB5;  
-    border: none;  
+hr {
+    height: 2px;
+    background-color: #00ADB5;
+    border: none;
     margin-bottom: 10px;
-}  
+}
 
 .small-logo {
-    width: 40px; /* Adjust size as needed */
+    width: 40px;
+    /* Adjust size as needed */
     height: auto;
 }
-
 
 .login-right {
     width: 57%;
@@ -63,15 +66,19 @@ hr {
 }
 
 .login-right {
-    background-size: cover;  /* Adjusts the image to fill the container */
-    background-position: center;  /* Centers the image */
-    background-repeat: no-repeat;  /* Prevents repeating */
-
+    background-size: cover;
+    /* Adjusts the image to fill the container */
+    background-position: center;
+    /* Centers the image */
+    background-repeat: no-repeat;
+    /* Prevents repeating */
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start; /* Aligns content to the top */
-    padding-top: 35px; /* Adjust spacing from the top */
+    justify-content: flex-start;
+    /* Aligns content to the top */
+    padding-top: 35px;
+    /* Adjust spacing from the top */
     /* padding-bottom: 10px; */
 }
 
@@ -79,6 +86,7 @@ hr {
     width: 150px;
     margin-bottom: 5px;
 }
+
 
 /* .input-group {
     margin-bottom: 15px;
@@ -91,7 +99,10 @@ hr {
     border-radius: 5px;
     font-size: 16px;
 } */
+
+
 /****/
+
 .input-group {
     position: relative;
     width: 100%;
@@ -101,13 +112,16 @@ hr {
 .input-group input {
     width: 100%;
     padding: 10px;
-    padding-right: 40px; /* Space for the eye icon */
+    padding-right: 40px;
+    /* Space for the eye icon */
     border: 1px solid #ccc;
     border-radius: 5px;
     font-size: 16px;
 }
 
+
 /* Eye icon inside the input box */
+
 .toggle-password {
     position: absolute;
     right: 10px;
@@ -117,8 +131,11 @@ hr {
     color: #888;
     font-size: 18px;
 }
+
+
 /*****/
-h2{
+
+h2 {
     margin-bottom: 250px;
     margin-top: 1px;
 }
@@ -155,18 +172,26 @@ button:hover {
 }
 
 .forgot-password:hover {
-    color:black;
+    color: black;
 }
 
 .alert {
-    background-color: #f8d7da; /* Light red background */
-    color: #721c24; /* Dark red text */
-    padding: 6px; /* Space inside the box */
-    margin: 10px 0; /* Space around the alert */
-    border: 1px solid #f5c6cb; /* Red border */
-    border-radius: 5px; /* Rounded corners */
-    text-align: center; /* Center text */
-    font-weight: bold; /* Bold text */
+    background-color: #f8d7da;
+    /* Light red background */
+    color: #721c24;
+    /* Dark red text */
+    padding: 6px;
+    /* Space inside the box */
+    margin: 10px 0;
+    /* Space around the alert */
+    border: 1px solid #f5c6cb;
+    /* Red border */
+    border-radius: 5px;
+    /* Rounded corners */
+    text-align: center;
+    /* Center text */
+    font-weight: bold;
+    /* Bold text */
     animation: fadeOut 5s ease-out forwards;
     transition: opacity 1s ease-out, height 0.5s ease-out, margin 0.5s ease-out;
 }
@@ -181,8 +206,12 @@ button:hover {
 }
 
 @keyframes fadeOut {
-    0% { opacity: 1; }
-    100% { opacity: 0; }
+    0% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
 }
 
 #caps-warning {
@@ -192,4 +221,21 @@ button:hover {
     margin-top: 5px;
     margin-bottom: 5px;
     text-align: center;
+}
+
+#loaderOverlay {
+    display: none;
+    /* Hidden by default */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+    /* Blurs the background */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
 }
