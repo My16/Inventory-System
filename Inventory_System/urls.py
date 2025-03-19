@@ -13,5 +13,10 @@ urlpatterns = [
     path('', views.loginPage, name='loginpage'),
     path('login/', views.user_login, name='login'),
     path('homepage/', views.homepage, name='homepage'),
+    path("add-office/", views.add_office, name="add_office"),
+    path('add-office/ajax/', views.add_office_ajax, name='add_office_ajax'),
+    path("get-office/<int:office_id>/", views.get_office, name="get-office"),
+    path("update-office/<int:office_id>/", views.update_office, name="update-office"),
+    path("delete-office/<int:office_id>/", views.delete_office, name="delete-office"),
     path('logout/', CustomLogoutView.as_view(next_page=settings.LOGOUT_REDIRECT_URL), name='logout'),
 ]
