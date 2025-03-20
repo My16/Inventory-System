@@ -11,6 +11,8 @@ import json
 from django.shortcuts import get_object_or_404
 from django.utils.timezone import localtime
 from django.core.paginator import Paginator
+from django.contrib.auth.models import User
+from django.contrib.auth.forms import UserCreationForm
 
 # Create your views here.
 def loginPage(request):
@@ -122,3 +124,84 @@ def update_office(request, office_id):
         })
 
     return JsonResponse({"success": False, "message": "Invalid request!"}, status=400)
+
+
+
+# for userlist
+
+
+def list_users(request):
+    user = request.user
+    users = User.objects.all().order_by("id")  # Fetch all users ordered by ID
+
+    paginator = Paginator(users, 14)  # Show 14 users per page
+    page_number = request.GET.get('page')  # Get the current page number
+    page_obj = paginator.get_page(page_number)  # Get the paginated users
+
+    context = {
+        'page_obj': page_obj,  # Pass only the paginated object
+        'display_name': user.get_full_name() if user.get_full_name() else user.username
+    }
+
+    return render(request, "createuser.html", context)
+
+# create user
+
+def create_user(request):
+    if request.method == "POST":
+        first_name = request.POST['first_name']
+        last_name = request.POST['last_name']
+        username = request.POST['username']
+        email = request.POST['email']
+        password = request.POST['password']
+        confirm_password = request.POST['confirm_password']
+
+        # Validate if passwords match
+        if password != confirm_password:
+            messages.error(request, "Passwords do not match.")
+            return redirect('list_users')
+
+        # Check if username or email already exists
+        if User.objects.filter(username=username).exists():
+            messages.error(request, "Username already exists.")
+            return redirect('list_users')
+
+        if User.objects.filter(email=email).exists():
+            messages.error(request, "Email already in use.")
+            return redirect('list_users')
+
+        # Create and save the new user
+        user = User.objects.create_user(username=username, email=email, password=password)
+        user.first_name = first_name
+        user.last_name = last_name
+        user.save()
+
+        messages.success(request, "User created successfully!")
+        return redirect('list_users')
+
+    return redirect('list_users')
+
+# user changepassword and delete
+@csrf_exempt
+def change_password(request, user_id):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        new_password = data.get("password")
+
+        user = get_object_or_404(User, id=user_id)
+        user.set_password(new_password)
+        user.save()
+
+        return JsonResponse({"success": True, "message": "Password updated successfully!"})
+
+    return JsonResponse({"success": False, "message": "Invalid request!"})
+
+@csrf_exempt
+def delete_user(request, user_id):
+    if request.method == "DELETE":
+        user = get_object_or_404(User, id=user_id)
+        user.delete()
+
+        return JsonResponse({"success": True, "message": "User deleted successfully!"})
+
+    return JsonResponse({"success": False, "message": "Invalid request!"})

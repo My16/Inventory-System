@@ -25,7 +25,7 @@
         <div class="container-fluid">
 
             <!-- Logo & Text -->
-            <a class="navbar-brand d-flex align-items-center" href="#">
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'homepage' %}">
                 <img src="{% static 'img/mharsmc.png' %}" alt="mharsmc" class="logo me-2">
                 <div class="d-flex flex-column">
                     <h6 class="mb-0" id="header-text1">Republic of the Philippines</h6>
@@ -141,7 +141,7 @@
                             <i class="bi bi-people"></i> User & Role Management
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#">Create Account</a></li>
+                            <li><a class="dropdown-item" href="{% url 'list_users' %}">List of User Account</a></li>
                             <li><a class="dropdown-item" href="#">Assign Role</a></li>
                             <li><a class="dropdown-item" href="#">Access Level</a></li>
                         </ul>

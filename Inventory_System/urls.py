@@ -18,5 +18,9 @@ urlpatterns = [
     path("get-office/<int:office_id>/", views.get_office, name="get-office"),
     path("update-office/<int:office_id>/", views.update_office, name="update-office"),
     path("delete-office/<int:office_id>/", views.delete_office, name="delete-office"),
+    path('list-users/', views.list_users, name='list_users'),
+    path('create-user/', views.create_user, name='create_user'),
+    path('change-password/<int:user_id>/', views.change_password, name='change_password'),
+    path('delete-user/<int:user_id>/', views.delete_user, name='delete_user'),
     path('logout/', CustomLogoutView.as_view(next_page=settings.LOGOUT_REDIRECT_URL), name='logout'),
 ]
