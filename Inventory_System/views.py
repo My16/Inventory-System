@@ -13,6 +13,8 @@ from django.utils.timezone import localtime
 from django.core.paginator import Paginator
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
+from functools import wraps
+from .models import UserPermission, PermissionOption
 
 # Create your views here.
 def loginPage(request):
@@ -21,7 +23,7 @@ def loginPage(request):
     return render(request, 'loginPage.html', context)
 
 def user_login(request):
-
+    
     if request.method == "POST":
         username = request.POST["username"]
         password = request.POST["password"]
@@ -29,22 +31,35 @@ def user_login(request):
 
         if user is not None:
             login(request, user)
-            return redirect('homepage')  # Redirect to dashboard
+        
+            # Fetch user's permissions
+            try:
+                user_permissions = UserPermission.objects.get(user=user)
+                permission_list = list(user_permissions.permissions.values_list("name", flat=True))
+            except UserPermission.DoesNotExist:
+                permission_list = []
+
+            # Store permissions in session
+            request.session["user_permissions"] = permission_list
+            print(f"✅ User {user.username} logged in. Assigned permissions: {permission_list}")
+
+            return redirect("homepage")
         else:
             messages.error(request, "Invalid username or password.")
             return redirect('loginpage') # Redirect to loginpage
-    
-    context = {}
 
-    return render(request, 'loginPage.html', context)
+    return redirect("loginpage")
+
+
 
 @login_required(login_url='/login/')
 def homepage(request):
     user = request.user
+    user_permissions = request.session.get("user_permissions", [])
 
     display_name = user.get_full_name() if user.get_full_name() else user.username
 
-    context = {"display_name": display_name}
+    context = {"display_name": display_name, "useer_permissions": user_permissions}
 
     return render(request, 'home.html', context)
 
@@ -205,3 +220,66 @@ def delete_user(request, user_id):
         return JsonResponse({"success": True, "message": "User deleted successfully!"})
 
     return JsonResponse({"success": False, "message": "Invalid request!"})
+
+def update_user_access(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+
+    if request.method == "POST":
+        selected_options = request.POST.getlist("access_options")  # Get selected checkboxes
+        print(f"🔄 Updating access for user: {user.username}")
+        print(f"✅ Selected permissions: {selected_options}")
+
+        # Get or create user permission entry
+        user_permission, created = UserPermission.objects.get_or_create(user=user)
+
+        # Fetch the PermissionOption instances that match selected names
+        valid_permissions = PermissionOption.objects.filter(name__in=selected_options)
+        
+        if not valid_permissions.exists():
+            print("⚠️ Warning: No valid permissions found!")
+        else:
+            print(f"✅ Assigning Permissions: {list(valid_permissions.values_list('name', flat=True))}")
+
+        # Clear previous permissions and set new ones
+        user_permission.permissions.set(valid_permissions)
+        user_permission.save()
+
+        # Debugging: Verify the update
+        updated_permissions = list(user_permission.permissions.values_list("name", flat=True))
+        print(f"🔄 Updated permissions in DB: {updated_permissions}")
+
+        return JsonResponse({"success": True, "message": "User access updated successfully!"})
+
+    return JsonResponse({"success": False, "message": "Invalid request!"}, status=400)
+
+
+
+def permission_required(access_option):
+    def decorator(view_func):
+        @wraps(view_func)
+        def _wrapped_view(request, *args, **kwargs):
+            if access_option in request.session.get("user_permissions", []):
+                return view_func(request, *args, **kwargs)
+            return redirect("no_access")  # Redirect if unauthorized
+        return _wrapped_view
+    return decorator
+
+def get_user_permissions(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+    print(f"✅ Fetching permissions for user ID: {user_id} ({user.username})")
+
+    # Get assigned permissions for the user
+    user_permissions = list(
+        UserPermission.objects.filter(user=user).values_list("permissions__name", flat=True)
+    )
+
+    # Get all available permissions
+    all_permissions = list(PermissionOption.objects.values_list("name", flat=True))
+
+    print(f"✅ User Permissions: {user_permissions}")
+    print(f"✅ All Permissions: {all_permissions}")
+
+    return JsonResponse({
+        "user_permissions": user_permissions,
+        "all_permissions": all_permissions
+    })

@@ -73,12 +73,18 @@
             </button>
 
             <div class="collapse navbar-collapse" id="secondaryNavbar">
+                <!-- Dashboard -->
                 <ul class="navbar-nav">
+                    {% if 'dashboard' in request.session.user_permissions or request.user.is_superuser %}
                     <li class="nav-item">
-                        <a class="nav-link fw-bold" href="{% url 'homepage' %}"><i class="bi bi-grid"></i> Dashboard</a>
+                        <a class="nav-link fw-bold" href="{% url 'homepage' %}">
+                            <i class="bi bi-grid"></i> Dashboard
+                        </a>
                     </li>
+                    {% endif %}
 
-                    <!-- Equipment Management Dropdown -->
+                    <!-- Equipment Management -->
+                    {% if 'equipment_management' in request.session.user_permissions or request.user.is_superuser %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle fw-bold" href="#" id="portalDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="bi bi-box-seam"></i> Equipment Management
@@ -89,8 +95,10 @@
                             <li><a class="dropdown-item" href="#">Delete Equipment</a></li>
                         </ul>
                     </li>
+                    {% endif %}
 
-                    <!-- Equipment Tracking Dropdown -->
+                    <!-- Equipment Tracking -->
+                    {% if 'equipment_tracking' in request.session.user_permissions or request.user.is_superuser %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle fw-bold" href="#" id="hrDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="bi bi-geo-alt"></i> Equipment Tracking
@@ -101,8 +109,10 @@
                             <li><a class="dropdown-item" href="#">Update Equipment Status</a></li>
                         </ul>
                     </li>
+                    {% endif %}
 
-                    <!-- Maintenance & Repairs Dropdown -->
+                    <!-- Maintenance & Repairs -->
+                    {% if 'maintenance_repairs' in request.session.user_permissions or request.user.is_superuser %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle fw-bold" href="#" id="attendanceDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="bi bi-tools"></i> Maintenance & Repairs
@@ -112,8 +122,10 @@
                             <li><a class="dropdown-item" href="#">Schedule & Track Repairs</a></li>
                         </ul>
                     </li>
+                    {% endif %}
 
-                    <!-- Reports & Audits Dropdown -->
+                    <!-- Reports & Audits -->
+                    {% if 'reports_audits' in request.session.user_permissions or request.user.is_superuser %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle fw-bold" href="#" id="payrollDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="bi bi-bar-chart"></i> Reports & Audits
@@ -123,43 +135,37 @@
                             <li><a class="dropdown-item" href="#">Conduct Audits</a></li>
                         </ul>
                     </li>
+                    {% endif %}
 
                     <!-- Reference -->
+                    {% if 'reference' in request.session.user_permissions or request.user.is_superuser %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle fw-bold" href="#" id="payrollDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="fa fa-book"></i> Reference
                         </a>
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="{% url 'add_office' %}">List of Offices</a></li>
-                            <!-- <li><a class="dropdown-item" href="#">Conduct Audits</a></li> -->
                         </ul>
                     </li>
+                    {% endif %}
 
-                    <!-- User & Role Management Dropdown -->
+                    <!-- User & Role Management -->
+                    {% if 'user_role_management' in request.session.user_permissions or request.user.is_superuser %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle fw-bold" href="#" id="systemDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="bi bi-people"></i> User & Role Management
                         </a>
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="{% url 'list_users' %}">List of User Account</a></li>
-                            <li><a class="dropdown-item" href="#">Assign Role</a></li>
-                            <li><a class="dropdown-item" href="#">Access Level</a></li>
                         </ul>
                     </li>
-
-                    <!-- <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle fw-bold" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-person-check"></i> User Management
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#">Create Account</a></li>
-                            <li><a class="dropdown-item" href="#">Manage Users</a></li>
-                        </ul>
-                    </li> -->
+                    {% endif %}
                 </ul>
             </div>
         </div>
     </nav>
+
+
 
 
     <body class="d-flex flex-column min-vh-100">

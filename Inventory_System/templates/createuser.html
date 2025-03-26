@@ -1,6 +1,8 @@
 {% extends "home.html" %} {% block content %} {% load static %}
 
 <link rel="stylesheet" href="{% static 'css/paginator.css' %}">
+<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+
 
 <div class="container mt-4">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
@@ -39,6 +41,11 @@
                             <li>
                                 <a class="dropdown-item text-primary change-password" href="#" data-id="{{ user.id }}" data-username="{{ user.username }}">
                                     <i class="fas fa-key"></i> Change Password
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item text-success" href="#" data-id="{{ user.id }}" data-username="{{ user.username }}" data-bs-toggle="modal" data-bs-target="#userAccessModal">
+                                    <i class="fas fa-user-shield"></i> User Access
                                 </a>
                             </li>
                             <li>
@@ -190,6 +197,38 @@
         </div>
     </div>
 </div>
+
+<!-- User Access Modal -->
+<div class="modal fade" id="userAccessModal" tabindex="-1" aria-labelledby="userAccessModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">User Access Settings</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="userAccessForm">
+                    {% csrf_token %}
+                    <input type="hidden" id="userId" name="user_id">
+
+                    <!-- Permissions will be dynamically added here -->
+                    <div id="permissionsList">
+                        <p class="text-muted text-center">Select access options for this user.</p>
+                        <hr>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
@@ -382,6 +421,125 @@
 </script>
 
 
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        document.querySelectorAll(".dropdown-item.text-success").forEach(button => {
+            button.addEventListener("click", function() {
+                let userId = this.getAttribute("data-id");
+                let username = this.getAttribute("data-username");
+
+                console.log(`✅ Fetching permissions for user: ${username} (ID: ${userId})`);
+
+                // Set user ID in hidden input
+                document.getElementById("userId").value = userId;
+
+                let permissionsContainer = document.getElementById("permissionsList");
+                permissionsContainer.innerHTML = `<p class="text-center text-muted">Loading permissions...</p>`;
+
+                // Fetch user permissions
+                fetch(`/get-user-permissions/${userId}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log("✅ Response received:", data);
+
+                        permissionsContainer.innerHTML = ""; // Clear previous content
+
+                        if (data.all_permissions.length === 0) {
+                            permissionsContainer.innerHTML = `<p class="text-center text-warning">No permissions available.</p>`;
+                            return;
+                        }
+
+                        // Define permission labels with icons
+                        const permissionLabels = {
+                            "dashboard": "📊 <strong>Dashboard Access</strong>",
+                            "equipment_management": "🛠 <strong>Manage Equipment</strong>",
+                            "equipment_tracking": "🔍 <strong>Track Equipment</strong>",
+                            "maintenance_repairs": "🏗 <strong>Maintenance & Repairs</strong>",
+                            "reports_audits": "📑 <strong>View Reports & Audits</strong>",
+                            "reference": "📚 <strong>Reference Materials</strong>",
+                            "user_role_management": "👥 <strong>Manage Users & Roles</strong>"
+                        };
+
+                        // Create checkboxes dynamically
+                        data.all_permissions.forEach(permission => {
+                            let isChecked = data.user_permissions.includes(permission) ? "checked" : "";
+                            let label = permissionLabels[permission] || permission.replace("_", " ");
+
+                            permissionsContainer.innerHTML += `
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="access_options" value="${permission}" ${isChecked} id="perm-${permission}">
+                                <label class="form-check-label" for="perm-${permission}">${label}</label>
+                            </div>
+                            <hr>
+                        `;
+                        });
+
+                        console.log("✅ Modal updated successfully!");
+                    })
+                    .catch(error => {
+                        console.error("❌ Fetch error:", error);
+                        permissionsContainer.innerHTML = `<p class="text-danger text-center">Failed to load permissions. Try again.</p>`;
+                    });
+
+                // Show modal
+                let modal = new bootstrap.Modal(document.getElementById('userAccessModal'));
+                modal.show();
+            });
+        });
+
+        // Handle form submission
+        document.getElementById("userAccessForm").addEventListener("submit", function(event) {
+            event.preventDefault(); // Prevent page reload
+
+            let formData = new FormData(this);
+            let userId = document.getElementById("userId").value;
+
+            // let submitButton = document.getElementById("saveChangesButton");
+            // submitButton.innerHTML = "Saving...";
+            // submitButton.disabled = true;
+
+            fetch(`/update-user-access/${userId}/`, {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value
+                    },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+
+                    if (data.success) {
+                        // Close modal
+                        let modalInstance = bootstrap.Modal.getInstance(document.getElementById("userAccessModal"));
+                        if (modalInstance) modalInstance.hide();
+
+                        // Remove modal backdrop manually
+                        document.querySelectorAll(".modal-backdrop").forEach(backdrop => backdrop.remove());
+                        document.body.classList.remove("modal-open");
+
+                        location.reload(); // Refresh to reflect changes
+                    } else {
+                        submitButton.innerHTML = "Save Changes";
+                        submitButton.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error("❌ Error:", error);
+                    alert("Something went wrong. Please try again.");
+                    submitButton.innerHTML = "Save Changes";
+                    submitButton.disabled = false;
+                });
+        });
+
+        // Ensure modal closes correctly without a black screen issue
+        let userAccessModal = document.getElementById("userAccessModal");
+        userAccessModal.addEventListener("hidden.bs.modal", function() {
+            document.querySelectorAll(".modal-backdrop").forEach(backdrop => backdrop.remove());
+            document.body.classList.remove("modal-open");
+        });
+    });
+</script>
 
 
 {% endblock %}
