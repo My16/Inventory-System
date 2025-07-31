@@ -15,6 +15,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from functools import wraps
 from .models import UserPermission, PermissionOption
+from django.contrib.auth.models import Group
 
 # Create your views here.
 def loginPage(request):
@@ -148,6 +149,7 @@ def update_office(request, office_id):
 
 def list_users(request):
     user = request.user
+    groups = Group.objects.all()
     users = User.objects.all().order_by("id")  # Fetch all users ordered by ID
 
     paginator = Paginator(users, 14)  # Show 14 users per page
@@ -156,7 +158,8 @@ def list_users(request):
 
     context = {
         'page_obj': page_obj,  # Pass only the paginated object
-        'display_name': user.get_full_name() if user.get_full_name() else user.username
+        'display_name': user.get_full_name() if user.get_full_name() else user.username,
+        'groups': groups
     }
 
     return render(request, "createuser.html", context)
@@ -171,6 +174,7 @@ def create_user(request):
         email = request.POST['email']
         password = request.POST['password']
         confirm_password = request.POST['confirm_password']
+        group_id = request.POST.get('group')  # Get the selected group ID from the form
 
         # Validate if passwords match
         if password != confirm_password:
@@ -191,6 +195,14 @@ def create_user(request):
         user.first_name = first_name
         user.last_name = last_name
         user.save()
+
+        # Assign Group to user
+        if group_id:
+            try:
+                group = Group.objects.filter(id__in=group_id)
+                user.groups.set(group)
+            except Group.DoesNotExist:
+                messages.warning(request, "Group not found.")
 
         messages.success(request, "User created successfully!")
         return redirect('list_users')

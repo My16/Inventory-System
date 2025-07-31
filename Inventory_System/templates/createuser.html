@@ -93,24 +93,39 @@
                 <form id="createUserForm" method="POST" action="{% url 'create_user' %}">
                     {% csrf_token %}
 
+                    <!-- First Name Field -->
                     <div class="mb-3">
                         <label for="first_name" class="form-label">First Name</label>
                         <input type="text" class="form-control" id="first_name" name="first_name" required>
                     </div>
 
+                    <!-- Last Name Field -->
                     <div class="mb-3">
                         <label for="last_name" class="form-label">Last Name</label>
                         <input type="text" class="form-control" id="last_name" name="last_name">
                     </div>
 
+                    <!-- Username Field -->
                     <div class="mb-3">
                         <label for="username" class="form-label">Username</label>
                         <input type="text" class="form-control" id="username" name="username" required>
                     </div>
 
+                    <!-- Email Field -->
                     <div class="mb-3">
                         <label for="email" class="form-label">Email</label>
                         <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+
+                    <!-- Assign to Group -->
+                    <div class="mb-3">
+                        <label for="group" class="form-label">Assign to Group</label>
+                        <select class="form-select" id="group" name="group">
+                            <option value="">-- Select Group --</option>
+                            {% for group in groups %}
+                                <option value="{{ group.id }}">{{ group.name }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
 
                     <!-- Password Field -->
