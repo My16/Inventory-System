@@ -23,3 +23,22 @@ class UserPermission(models.Model):
 
     def __str__(self):
         return f"Permissions for {self.user.username}"
+
+
+# --- Service Request Models ---
+
+class ServiceCategory(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return self.name
+
+class ServiceRequest(models.Model):
+    submission_date = models.DateTimeField(auto_now_add=True)
+    office = models.ForeignKey(Office, on_delete=models.CASCADE)
+    service_category = models.ForeignKey(ServiceCategory, on_delete=models.SET_NULL, null=True)
+    status = models.CharField(max_length=50, default='Pending')
+    assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_requests')
+
+    def __str__(self):
+        return f"Request #{self.id} - {self.office.office_name}"

@@ -23,7 +23,7 @@ def loginPage(request):
     return render(request, 'loginPage.html', context)
 
 def user_login(request):
-    
+
     if request.method == "POST":
         username = request.POST["username"]
         password = request.POST["password"]
@@ -73,8 +73,9 @@ def add_office(request):
     page_number = request.GET.get('page') #Get the current page number
     page_obj = paginator.get_page(page_number) #Get the page object
 
-    context = {'offices': offices, 'display_name': user.get_full_name() if user.get_full_name() else user.username}
-    return render(request, 'add_office.html', {'page_obj': page_obj})
+    context = {'offices': offices, 'page_obj': page_obj, 'display_name': user.get_full_name() if user.get_full_name() else user.username}
+
+    return render(request, 'add_office.html', context)
 
 # show and add
 @csrf_exempt
@@ -283,3 +284,11 @@ def get_user_permissions(request, user_id):
         "user_permissions": user_permissions,
         "all_permissions": all_permissions
     })
+
+
+def service_request(request):
+    user = request.user
+    display_name = user.get_full_name() if user.get_full_name() else user.username
+
+    context = {"display_name": display_name}
+    return render(request, 'service_request.html', context)

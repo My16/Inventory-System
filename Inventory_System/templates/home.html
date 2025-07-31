@@ -49,14 +49,19 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="#">Profile</a></li>
-                            <li><a class="dropdown-item" href="#">Change Password</a></li>
+                            <a class="dropdown-item text-primary change-password" href="#" data-id="{{ user.id }}" data-username="{{ user.username }}">
+                                <i class="fas fa-key"></i> Change Password
+                            </a>
                             <li>
                                 <hr class="dropdown-divider">
                             </li>
                             <!-- <li><a class="dropdown-item text-danger" action = "(% url user_logout %)" method = "POST" type="submit">Logout</a></li> -->
                             <form action="{% url 'logout' %}" method="POST">
                                 {% csrf_token %}
-                                <button type="submit" class="dropdown-item text-danger">Logout</button>
+                                <button type="submit" class="dropdown-item text-danger d-flex align-items-center">
+                                    <i class="bi bi-box-arrow-right me-2"></i> Logout
+                                </button>
+
                             </form>
                         </ul>
                     </li>
@@ -118,6 +123,7 @@
                             <i class="bi bi-tools"></i> Maintenance & Repairs
                         </a>
                         <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'service_request' %}">Service Request</a></li>
                             <li><a class="dropdown-item" href="#">Log Maintenance Requests</a></li>
                             <li><a class="dropdown-item" href="#">Schedule & Track Repairs</a></li>
                         </ul>
@@ -179,6 +185,163 @@
             Copyright © 2025 Mayor Hilarion A. Ramiro Sr. Medical Center All rights reserved.
         </footer>
     </body>
+
+    <!-- Change Password Modal -->
+    <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="changePasswordModalLabel">Change Password for <span id="changePasswordUser"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="changePasswordForm">
+                        {% csrf_token %}
+                        <input type="hidden" id="user_id" name="user_id">
+
+                        <!-- New Password -->
+                        <div class="mb-3 position-relative">
+                            <label for="new_password" class="form-label">New Password</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="new_password" name="new_password" required>
+                                <button class="btn btn-outline-secondary toggle-password" type="button" data-target="new_password">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            </div>
+                            <small class="text-danger d-none" id="capsWarningNew">⚠️ Caps Lock is ON</small>
+                        </div>
+
+                        <!-- Confirm Password -->
+                        <div class="mb-3 position-relative">
+                            <label for="confirm_new_password" class="form-label">Confirm Password</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="confirm_new_password" name="confirm_new_password" required>
+                                <button class="btn btn-outline-secondary toggle-password" type="button" data-target="confirm_new_password">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            </div>
+                            <small class="text-danger d-none" id="capsWarningConfirm">⚠️ Caps Lock is ON</small>
+                            <small class="text-success d-none" id="passwordMatch">✅ Passwords match!</small>
+                            <small class="text-danger d-none" id="passwordMismatch">❌ Passwords do not match!</small>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-success">Change Password</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Get elements
+            const newPassword = document.querySelector("#new_password");
+            const confirmPassword = document.querySelector("#confirm_new_password");
+            const passwordMismatch = document.querySelector("#passwordMismatch");
+            const capsWarningNew = document.querySelector("#capsWarningNew");
+            const capsWarningConfirm = document.querySelector("#capsWarningConfirm");
+            const passwordFields = [newPassword, confirmPassword];
+
+            // Function to get CSRF token
+            function getCSRFToken() {
+                let csrfToken = document.querySelector("[name=csrfmiddlewaretoken]");
+                return csrfToken ? csrfToken.value : "";
+            }
+
+            //function to validate password match
+            function validatePasswordMatch() {
+                if (newPassword.value && confirmPassword.value) {
+                    if (newPassword.value !== confirmPassword.value) {
+                        passwordMismatch.classList.remove("d-none"); // Show error
+                        passwordMatch.classList.add("d-none"); // Hide success message
+                    } else {
+                        passwordMismatch.classList.add("d-none"); // Hide error
+                        passwordMatch.classList.remove("d-none"); // Show success message
+                    }
+                } else {
+                    // If fields are empty, hide both messages
+                    passwordMismatch.classList.add("d-none");
+                    passwordMatch.classList.add("d-none");
+                }
+            }
+
+            // Caps Lock Warning
+            function checkCapsLock(event, warningElement) {
+                if (event.getModifierState("CapsLock")) {
+                    warningElement.classList.remove("d-none");
+                } else {
+                    warningElement.classList.add("d-none");
+                }
+            }
+
+            // Attach events to password fields
+            passwordFields.forEach(field => {
+                field.addEventListener("input", validatePasswordMatch);
+                field.addEventListener("keyup", function(event) {
+                    checkCapsLock(event, this.id === "new_password" ? capsWarningNew : capsWarningConfirm);
+                });
+            });
+
+            // Handle "Change Password" button click
+            document.querySelectorAll(".change-password").forEach(button => {
+                button.addEventListener("click", function(event) {
+                    event.preventDefault();
+                    document.querySelector("#user_id").value = this.getAttribute("data-id");
+                    document.querySelector("#changePasswordUser").textContent = this.getAttribute("data-username");
+
+                    let passwordModal = new bootstrap.Modal(document.getElementById("changePasswordModal"));
+                    passwordModal.show();
+                });
+            });
+
+            // Handle "Change Password" form submission
+            document.querySelector("#changePasswordForm").addEventListener("submit", function(event) {
+                event.preventDefault();
+
+                let userId = document.querySelector("#user_id").value;
+                let newPasswordValue = newPassword.value;
+                let confirmPasswordValue = confirmPassword.value;
+
+                // Ensure passwords match before submitting
+                if (newPasswordValue !== confirmPasswordValue) {
+                    passwordMismatch.classList.remove("d-none");
+                    return;
+                }
+
+                fetch(`/change-password/${userId}/`, {
+                        method: "POST",
+                        headers: {
+                            "X-CSRFToken": getCSRFToken(),
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            password: newPasswordValue
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        alert(data.message);
+                        if (data.success) {
+                            document.querySelector("#changePasswordModal .btn-close").click();
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error changing password:", error);
+                        alert("Failed to change password.");
+                    });
+            });
+
+            // Ensure modal closes correctly without a black screen issue
+            let userAccessModal = document.getElementById("changePasswordModal");
+            userAccessModal.addEventListener("hidden.bs.modal", function() {
+                document.querySelectorAll(".modal-backdrop").forEach(backdrop => backdrop.remove());
+                document.body.classList.remove("modal-open");
+            });
+        });
+    </script>
 
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

@@ -24,5 +24,6 @@ urlpatterns = [
     path('delete-user/<int:user_id>/', views.delete_user, name='delete_user'),
     path('update-user-access/<int:user_id>/', views.update_user_access, name='update_user_access'),
     path("get-user-permissions/<int:user_id>/", views.get_user_permissions, name="get_user_permissions"),
+    path("service-request/", views.service_request, name="service_request"),
     path('logout/', CustomLogoutView.as_view(next_page=settings.LOGOUT_REDIRECT_URL), name='logout'),
 ]
