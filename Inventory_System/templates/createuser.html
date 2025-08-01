@@ -117,11 +117,22 @@
                         <input type="email" class="form-control" id="email" name="email" required>
                     </div>
 
+                    <!-- Assign to Office -->
+                    <div class="mb-3">
+                        <label for="office" class="form-label">Assign to Office</label>
+                        <select class="form-select" id="office" name="office">
+                            <option value="">-- Select Office --</option>
+                            {% for office in offices %}
+                                <option value="{{ office.id }}">{{ office.office_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
                     <!-- Assign to Group -->
                     <div class="mb-3">
-                        <label for="group" class="form-label">Assign to Group</label>
+                        <label for="group" class="form-label">Assign to Role</label>
                         <select class="form-select" id="group" name="group">
-                            <option value="">-- Select Group --</option>
+                            <option value="">-- Select Role --</option>
                             {% for group in groups %}
                                 <option value="{{ group.id }}">{{ group.name }}</option>
                             {% endfor %}

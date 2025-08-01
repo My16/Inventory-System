@@ -17,9 +17,11 @@ class PermissionOption(models.Model):
     def __str__(self):
         return self.name
 
+#  --- User Permission Models ---
 class UserPermission(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     permissions = models.ManyToManyField(PermissionOption)  # Many-to-many relationship
+    office = models.ForeignKey('Office', on_delete=models.SET_NULL, null=True)
 
     def __str__(self):
         return f"Permissions for {self.user.username}"
@@ -42,3 +44,4 @@ class ServiceRequest(models.Model):
 
     def __str__(self):
         return f"Request #{self.id} - {self.office.office_name}"
+    

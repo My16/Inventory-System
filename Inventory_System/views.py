@@ -151,6 +151,7 @@ def list_users(request):
     user = request.user
     groups = Group.objects.all()
     users = User.objects.all().order_by("id")  # Fetch all users ordered by ID
+    offices = Office.objects.all().order_by("id")  # Fetch all offices
 
     paginator = Paginator(users, 14)  # Show 14 users per page
     page_number = request.GET.get('page')  # Get the current page number
@@ -159,7 +160,8 @@ def list_users(request):
     context = {
         'page_obj': page_obj,  # Pass only the paginated object
         'display_name': user.get_full_name() if user.get_full_name() else user.username,
-        'groups': groups
+        'groups': groups,
+        'offices': offices,
     }
 
     return render(request, "createuser.html", context)
@@ -175,6 +177,7 @@ def create_user(request):
         password = request.POST['password']
         confirm_password = request.POST['confirm_password']
         group_id = request.POST.get('group')  # Get the selected group ID from the form
+        office_id = request.POST.get('office')  # Get the selected office ID from the form
 
         # Validate if passwords match
         if password != confirm_password:
@@ -203,6 +206,11 @@ def create_user(request):
                 user.groups.set(group)
             except Group.DoesNotExist:
                 messages.warning(request, "Group not found.")
+
+        # Assign office using UserPermission
+        if office_id:
+            office = Office.objects.get(id=office_id)
+            UserPermission.objects.create(user=user, office=office)
 
         messages.success(request, "User created successfully!")
         return redirect('list_users')
