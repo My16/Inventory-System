@@ -3,7 +3,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from .models import Office
+from .models import Office, ServiceRequest, ServiceCategory
 from .forms import OfficeForm
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -16,6 +16,8 @@ from django.contrib.auth.forms import UserCreationForm
 from functools import wraps
 from .models import UserPermission, PermissionOption
 from django.contrib.auth.models import Group
+from django.utils import timezone
+
 
 # Create your views here.
 def loginPage(request):
@@ -306,9 +308,35 @@ def get_user_permissions(request, user_id):
     })
 
 
+@login_required
 def service_request(request):
     user = request.user
     display_name = user.get_full_name() if user.get_full_name() else user.username
 
-    context = {"display_name": display_name}
+    if request.method == "POST":
+        service_category_id = request.POST.get("service_category")
+        description = request.POST.get("description")
+
+        try:
+            category = ServiceCategory.objects.get(id=service_category_id)
+            ServiceRequest.objects.create(
+                service_category=category,
+                description=description,
+                requestor=user,
+                submission_date=timezone.now(),
+                status="Pending"
+            )
+        except ServiceCategory.DoesNotExist:
+            pass  # You may log this or handle it more gracefully
+
+        return redirect('service_request')  # Redirect to avoid resubmission
+
+    service_requests = ServiceRequest.objects.filter(requestor=user).order_by('-submission_date')
+    service_categories = ServiceCategory.objects.all()
+
+    context = {
+        "display_name": display_name,
+        "service_requests": service_requests,
+        "service_categories": service_categories,
+    }
     return render(request, 'service_request.html', context)

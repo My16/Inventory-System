@@ -35,13 +35,22 @@ class ServiceCategory(models.Model):
     def __str__(self):
         return self.name
 
+
 class ServiceRequest(models.Model):
+    STATUS_CHOICES = [
+        ('Pending', 'Pending'),
+        ('In Progress', 'In Progress'),
+        ('Completed', 'Completed'),
+        ('Cancelled', 'Cancelled'),
+    ]
+
     submission_date = models.DateTimeField(auto_now_add=True)
+    requestor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     office = models.ForeignKey(Office, on_delete=models.CASCADE)
     service_category = models.ForeignKey(ServiceCategory, on_delete=models.SET_NULL, null=True)
-    status = models.CharField(max_length=50, default='Pending')
+    description = models.TextField(default="No description provided")
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='Pending')
     assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_requests')
 
     def __str__(self):
-        return f"Request #{self.id} - {self.office.office_name}"
-    
+        return f"Request #{self.id} - {self.office.office_name} - {self.status}"
