@@ -27,7 +27,7 @@
         </thead>
         <tbody>
             {% for request in page_obj %}
-            <tr {% if request.assigned_to == user %}class="table-warning"{% endif %}>
+            <tr {% if request.assigned_to == user %}class="table-success"{% endif %}>
                 <td>{{ request.id }}</td>
                 <td>{{ request.submission_date|date:"Y-m-d H:i" }}</td>
                 <td>{{ request.service_category.name }}</td>
