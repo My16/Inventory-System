@@ -11,49 +11,61 @@
     </div>
 
     <!-- Table (Your existing table code remains unchanged) -->
-    <div class="table-responsive">
-        <table class="table table-bordered">
-            <thead class="table">
-                <tr>
-                    <th>ID</th>
-                    <th>Submission Date</th>
-                    <th>Service Category</th>
-                    <th>Description</th>
-                    <th>Requestor</th>
-                    <th>Status</th>
-                    <th>Assigned To</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for request in page_obj %}
-                <tr>
-                    <td>{{ request.id }}</td>
-                    <td>{{ request.submission_date|date:"Y-m-d H:i" }}</td>
-                    <td>{{ request.service_category.name }}</td>
-                    <td>{{ request.description }}</td>
-                    <td>{{ request.requestor.get_full_name }}</td>
-                    <td>{{ request.status }}</td>
-                    <td>{{ request.assigned_to.get_full_name|default:"—" }}</td>
-                    <td>
-                        <div class="dropdown">
-                            <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"></button>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item text-primary" href="#"><i class="fas fa-eye"></i> View</a></li>
-                                <!-- <li><a class="dropdown-item text-warning" href="#"><i class="fas fa-edit"></i> Edit</a></li>
-                                <li><a class="dropdown-item text-danger" href="#"><i class="fas fa-trash"></i> Delete</a></li> -->
-                            </ul>
-                        </div>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="8" class="text-center">No service requests found.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    
+    <table class="table table-bordered">
+        <thead class="table">
+            <tr>
+                <th>ID</th>
+                <th>Submission Date</th>
+                <th>Service Category</th>
+                <th>Description</th>
+                <th>Requestor</th>
+                <th>Status</th>
+                <th>Assigned To</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for request in page_obj %}
+            <tr {% if request.assigned_to == user %}class="table-warning"{% endif %}>
+                <td>{{ request.id }}</td>
+                <td>{{ request.submission_date|date:"Y-m-d H:i" }}</td>
+                <td>{{ request.service_category.name }}</td>
+                <td>{{ request.description }}</td>
+                <td>{{ request.requestor.get_full_name }}</td>
+                <td>{{ request.status }}</td>
+                <td>{{ request.assigned_to.get_full_name|default:"—" }}</td>
+                <td>
+                    <div class="dropdown">
+                    <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"></button>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a class="dropdown-item text-primary change-password" href="#" data-id="{{ user.id }}" data-username="{{ user.username }}">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                        </li>
+                        <!-- <li>
+                            <a class="dropdown-item text-success" href="#" data-id="{{ user.id }}" data-username="{{ user.username }}" data-bs-toggle="modal" data-bs-target="#userAccessModal">
+                                <i class="fas fa-user-shield"></i> User Access
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item text-danger delete-user" href="#" data-id="{{ user.id }}">
+                                <i class="fas fa-trash-alt"></i> Delete
+                            </a>
+                        </li> -->
+                    </ul>
+                </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="text-center">No service requests found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
     <!-- this is for the pages -->
     <div class="pagination">
         <!-- First and Previous Buttons -->

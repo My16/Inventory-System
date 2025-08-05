@@ -17,6 +17,8 @@ from functools import wraps
 from .models import UserPermission, PermissionOption
 from django.contrib.auth.models import Group
 from django.utils import timezone
+from django.db.models import Q
+
 
 
 # Create your views here.
@@ -322,8 +324,14 @@ def service_request(request):
         try:
             category = ServiceCategory.objects.get(id=service_category_id)
             assigned_to_user = User.objects.get(id=assigned_to_id)
+
+            # ✅ Get user's office automatically
+            user_permission = UserPermission.objects.get(user=user)
+            office = user_permission.office
+
             ServiceRequest.objects.create(
                 service_category=category,
+                office=office,
                 description=description,
                 requestor=user,
                 assigned_to=assigned_to_user,
@@ -334,9 +342,20 @@ def service_request(request):
             pass  # You may log this or handle it more gracefully
 
         return redirect('service_request')  # Redirect to avoid resubmission
+    
+    # Fetch service requests
+    if user.groups.filter(name="IT").exists():
+        service_requests = ServiceRequest.objects.all().order_by('-submission_date')
+    else:
+        service_requests = ServiceRequest.objects.filter(requestor=user).order_by('-submission_date')
 
-    service_requests = ServiceRequest.objects.filter(requestor=user).order_by('-submission_date')
+    
     service_categories = ServiceCategory.objects.all()
+
+    # ✅ Pagination
+    paginator = Paginator(service_requests, 10)  # Show 10 per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
     # 👇 Only users in IT group
     try:
@@ -347,6 +366,7 @@ def service_request(request):
 
     context = {
         "display_name": display_name,
+        "page_obj": page_obj,  # 👈 Pass paginated service requests
         "service_requests": service_requests,
         "service_categories": service_categories,
         "users": it_users,  # 👈 Add this to pass IT users to template
