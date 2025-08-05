@@ -101,11 +101,30 @@
                         </select>
                     </div>
                     <div class="mb-3">
+                        <label for="requestor" class="form-label">Assigned to</label>
+                        <select class="form-select" id="requestor" name="assigned_to" required>
+                            <option value="" disabled selected>Select IT Employee</option>
+                            {% for user in users %}
+                                <option value="{{ user.id }}">{{ user.get_full_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
                         <label for="description" class="form-label">Description</label>
                         <textarea class="form-control" id="description" name="description" rows="4" required></textarea>
                     </div>
+
+                    <div class="mb-3">
+                    <label for="status" class="form-label">Status</label>
+                        <select class="form-select" id="status" name="status" required>
+                            <option value="" disabled selected>Select Status</option>
+                            {% for value, label in status_choices %}
+                                <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                     <!-- Optional: Use hidden input if requestor is auto-set in backend -->
-                    <!-- <input type="hidden" name="requestor" value="{{ user.id }}"> -->
+                    <input type="hidden" name="requestor" value="{{ user.id }}">
 
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>

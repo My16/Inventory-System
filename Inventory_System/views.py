@@ -316,17 +316,21 @@ def service_request(request):
     if request.method == "POST":
         service_category_id = request.POST.get("service_category")
         description = request.POST.get("description")
+        assigned_to_id = request.POST.get("assigned_to")
+        status = request.POST.get("status")  # 👈 Get status from form
 
         try:
             category = ServiceCategory.objects.get(id=service_category_id)
+            assigned_to_user = User.objects.get(id=assigned_to_id)
             ServiceRequest.objects.create(
                 service_category=category,
                 description=description,
                 requestor=user,
+                assigned_to=assigned_to_user,
                 submission_date=timezone.now(),
-                status="Pending"
+                status=status
             )
-        except ServiceCategory.DoesNotExist:
+        except (ServiceCategory.DoesNotExist, User.DoesNotExist):
             pass  # You may log this or handle it more gracefully
 
         return redirect('service_request')  # Redirect to avoid resubmission
@@ -334,9 +338,19 @@ def service_request(request):
     service_requests = ServiceRequest.objects.filter(requestor=user).order_by('-submission_date')
     service_categories = ServiceCategory.objects.all()
 
+    # 👇 Only users in IT group
+    try:
+        it_group = Group.objects.get(name="IT")
+        it_users = it_group.user_set.all()
+    except Group.DoesNotExist:
+        it_users = []
+
     context = {
         "display_name": display_name,
         "service_requests": service_requests,
         "service_categories": service_categories,
+        "users": it_users,  # 👈 Add this to pass IT users to template
+        "status_choices": ServiceRequest.STATUS_CHOICES,
     }
+
     return render(request, 'service_request.html', context)
