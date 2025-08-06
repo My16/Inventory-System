@@ -48,7 +48,7 @@
                             <span>{{ display_name }}</span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="#">Profile</a></li>
+                            <!-- <li><a class="dropdown-item" href="#">Profile</a></li> -->
                             <a class="dropdown-item text-primary change-password" href="#" data-id="{{ user.id }}" data-username="{{ user.username }}">
                                 <i class="fas fa-key"></i> Change Password
                             </a>
@@ -124,8 +124,8 @@
                         </a>
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="{% url 'service_request' %}">Service Request</a></li>
-                            <li><a class="dropdown-item" href="#">Log Maintenance Requests</a></li>
-                            <li><a class="dropdown-item" href="#">Schedule & Track Repairs</a></li>
+                            <!-- <li><a class="dropdown-item" href="#">Log Maintenance Requests</a></li>
+                            <li><a class="dropdown-item" href="#">Schedule & Track Repairs</a></li> -->
                         </ul>
                     </li>
                     {% endif %}
@@ -138,7 +138,7 @@
                         </a>
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="#">Generate Reports</a></li>
-                            <li><a class="dropdown-item" href="#">Conduct Audits</a></li>
+                            <!-- <li><a class="dropdown-item" href="#">Conduct Audits</a></li> -->
                         </ul>
                     </li>
                     {% endif %}

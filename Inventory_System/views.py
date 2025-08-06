@@ -1,3 +1,4 @@
+from urllib import request
 from django.conf import settings
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
@@ -18,6 +19,8 @@ from .models import UserPermission, PermissionOption
 from django.contrib.auth.models import Group
 from django.utils import timezone
 from django.db.models import Q
+from django.views.decorators.http import require_POST
+from django.http import HttpResponseForbidden
 
 
 
@@ -314,20 +317,26 @@ def get_user_permissions(request, user_id):
 def service_request(request):
     user = request.user
     display_name = user.get_full_name() if user.get_full_name() else user.username
+    status_choices = ServiceRequest.STATUS_CHOICES
+    is_it = request.user.groups.filter(name='IT').exists()
 
     if request.method == "POST":
         service_category_id = request.POST.get("service_category")
         description = request.POST.get("description")
         assigned_to_id = request.POST.get("assigned_to")
-        status = request.POST.get("status")  # 👈 Get status from form
 
         try:
             category = ServiceCategory.objects.get(id=service_category_id)
             assigned_to_user = User.objects.get(id=assigned_to_id)
 
             # ✅ Get user's office automatically
-            user_permission = UserPermission.objects.get(user=user)
-            office = user_permission.office
+            try:
+                user_permission = UserPermission.objects.get(user=user)
+                office = user_permission.office
+            except UserPermission.DoesNotExist:
+                messages.error(request, "You don't have permission to submit a request.")
+                return redirect("service_request")
+
 
             ServiceRequest.objects.create(
                 service_category=category,
@@ -336,7 +345,7 @@ def service_request(request):
                 requestor=user,
                 assigned_to=assigned_to_user,
                 submission_date=timezone.now(),
-                status=status
+                status='Pending',
             )
         except (ServiceCategory.DoesNotExist, User.DoesNotExist):
             pass  # You may log this or handle it more gracefully
@@ -371,6 +380,36 @@ def service_request(request):
         "service_categories": service_categories,
         "users": it_users,  # 👈 Add this to pass IT users to template
         "status_choices": ServiceRequest.STATUS_CHOICES,
+        'is_it': is_it,
     }
 
     return render(request, 'service_request.html', context)
+
+@require_POST
+@login_required
+# def change_status(request, request_id):
+#     if not request.user.groups.filter(name="IT").exists():
+#         return HttpResponseForbidden("You are not authorized to change the status.")
+
+#     new_status = request.POST.get("new_status")
+#     service_request = get_object_or_404(ServiceRequest, id=request_id)
+
+#     if new_status in dict(ServiceRequest.STATUS_CHOICES):
+#         service_request.status = new_status
+#         service_request.save()
+
+#     return redirect('service_request')
+
+def change_status(request, request_id):
+    service_request = get_object_or_404(ServiceRequest, id=request_id)
+
+    # ✅ Check that the logged-in user is the assigned user
+    if service_request.assigned_to != request.user:
+        return HttpResponseForbidden("You are not authorized to change the status of this request.")
+
+    new_status = request.POST.get("new_status")
+    if new_status in dict(ServiceRequest.STATUS_CHOICES):
+        service_request.status = new_status
+        service_request.save()
+
+    return redirect('service_request')
