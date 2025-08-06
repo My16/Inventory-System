@@ -387,19 +387,6 @@ def service_request(request):
 
 @require_POST
 @login_required
-# def change_status(request, request_id):
-#     if not request.user.groups.filter(name="IT").exists():
-#         return HttpResponseForbidden("You are not authorized to change the status.")
-
-#     new_status = request.POST.get("new_status")
-#     service_request = get_object_or_404(ServiceRequest, id=request_id)
-
-#     if new_status in dict(ServiceRequest.STATUS_CHOICES):
-#         service_request.status = new_status
-#         service_request.save()
-
-#     return redirect('service_request')
-
 def change_status(request, request_id):
     service_request = get_object_or_404(ServiceRequest, id=request_id)
 
@@ -408,8 +395,16 @@ def change_status(request, request_id):
         return HttpResponseForbidden("You are not authorized to change the status of this request.")
 
     new_status = request.POST.get("new_status")
+    action_taken = request.POST.get("action_taken", "").strip()
+
     if new_status in dict(ServiceRequest.STATUS_CHOICES):
         service_request.status = new_status
+        if new_status.lower() == 'completed':
+            service_request.action_taken = action_taken
+        else:
+            service_request.action_taken = None  # Clear it
+
+        print("Saving action taken:", action_taken)
         service_request.save()
 
     return redirect('service_request')

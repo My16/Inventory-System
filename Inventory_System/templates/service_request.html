@@ -4,10 +4,19 @@
 <div class="container mt-4">
     <!-- Add Office Button -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-        <h2>Request History</h2>
-        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addServiceRequestModal">
-            <i class="fas fa-plus"></i> Add Service Request
-        </button>
+        <h2>
+            {% if is_it %}
+                Service Requests
+            {% else %}
+                Request History
+            {% endif %}
+        </h2>
+        
+        {% if not is_it %}
+            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addServiceRequestModal">
+                <i class="fas fa-plus"></i> Add Service Request
+            </button>
+        {% endif %}
     </div>
 
     <!-- Table (Your existing table code remains unchanged) -->
@@ -22,6 +31,7 @@
                 <th>Requestor</th>
                 <th>Status</th>
                 <th>Assigned To</th>
+                <th>Action Taken</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -36,6 +46,13 @@
                 <td>{{ request.status }}</td>
                 <td>{{ request.assigned_to.get_full_name|default:"—" }}</td>
                 <td>
+                    {% if request.action_taken %}
+                        {{ request.action_taken }}
+                    {% else %}
+                        <em>No action taken</em>
+                    {% endif %}
+                </td>
+                <td>
                     <div class="dropdown">
                     <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"></button>
                     <ul class="dropdown-menu">
@@ -45,21 +62,22 @@
                             </a>
                         </li>
 
-                        {% if is_it and request.assigned_to == user%}
-                        <!-- <li>
-                            <a href="#" class="dropdown-item text-success" data-bs-toggle="modal" data-bs-target="#changeStatusModal" data-request-id="{{ request.id }}" data-current-status="{{ request.status }}">
-                                <i class="fas fa-edit"></i> Change Status
-                            </a>
-                        </li> -->
-                            <a href="#" 
-                                class="dropdown-item text-success change-status-btn"
-                                data-bs-toggle="modal"
-                                data-bs-target="#changeStatusModal"
-                                data-request-id="{{ request.id }}"
-                                data-current-status="{{ request.status }}"
-                                data-current-status-display="{{ request.get_status_display }}">
-                                <i class="fas fa-edit"></i> Change Status
-                            </a>
+                        {% if is_it and request.assigned_to == user %}
+                            {% if request.status == "Completed" and request.action_taken %}
+                                <span class="dropdown-item text-muted disabled">
+                                    <i class="fas fa-lock"></i> Status Locked
+                                </span>
+                            {% else %}
+                                <a href="#" 
+                                    class="dropdown-item text-success change-status-btn"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#changeStatusModal"
+                                    data-request-id="{{ request.id }}"
+                                    data-current-status="{{ request.status }}"
+                                    data-current-status-display="{{ request.get_status_display }}">
+                                    <i class="fas fa-edit"></i> Change Status
+                                </a>
+                            {% endif %}
                         {% endif %}
                        
                         <!-- <li>
@@ -105,52 +123,54 @@
 
 </div>
 
-<!-- Modal for Adding Service Request -->
-<div class="modal fade" id="addServiceRequestModal" tabindex="-1" aria-labelledby="addServiceRequestModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title" id="addServiceRequestModalLabel">Add New Service Request</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form method="POST" action="{% url 'service_request' %}">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="serviceCategory" class="form-label">Service Category</label>
-                        <select class="form-select" id="serviceCategory" name="service_category" required>
-                            <option value="" disabled selected>Select category</option>
-                            {% for category in service_categories %}
-                                <option value="{{ category.id }}">{{ category.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="requestor" class="form-label">Assigned to</label>
-                        <select class="form-select" id="requestor" name="assigned_to" required>
-                            <option value="" disabled selected>Select IT Employee</option>
-                            {% for user in users %}
-                                <option value="{{ user.id }}">{{ user.get_full_name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="description" class="form-label">Description</label>
-                        <textarea class="form-control" id="description" name="description" rows="4" required></textarea>
-                    </div>
+{% if not is_it %}
+    <!-- Modal for Adding Service Request -->
+    <div class="modal fade" id="addServiceRequestModal" tabindex="-1" aria-labelledby="addServiceRequestModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="addServiceRequestModalLabel">Add New Service Request</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" action="{% url 'service_request' %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="serviceCategory" class="form-label">Service Category</label>
+                            <select class="form-select" id="serviceCategory" name="service_category" required>
+                                <option value="" disabled selected>Select category</option>
+                                {% for category in service_categories %}
+                                    <option value="{{ category.id }}">{{ category.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="requestor" class="form-label">Assigned to</label>
+                            <select class="form-select" id="requestor" name="assigned_to" required>
+                                <option value="" disabled selected>Select IT Employee</option>
+                                {% for user in users %}
+                                    <option value="{{ user.id }}">{{ user.get_full_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="4" required></textarea>
+                        </div>
 
-                    <!-- Optional: Use hidden input if requestor is auto-set in backend -->
-                    <input type="hidden" name="requestor" value="{{ user.id }}">
+                        <!-- Optional: Use hidden input if requestor is auto-set in backend -->
+                        <input type="hidden" name="requestor" value="{{ user.id }}">
 
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-success">Submit Request</button>
-                    </div>
-                </form>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-success">Submit Request</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
-</div>
+{% endif %}
 
 <!-- Change Status Modal -->
 <div class="modal fade" id="changeStatusModal" tabindex="-1" aria-labelledby="changeStatusModalLabel" aria-hidden="true">
@@ -169,6 +189,10 @@
                     <select class="form-select" name="new_status" id="modalStatusSelect">
                     <!-- Will be populated by JavaScript -->
                     </select>
+                </div>
+                <div class="mb-3" id="actionTakenGroup" style="display: none;">
+                    <label for="action_taken" class="form-label">Action Taken</label>
+                    <textarea name="action_taken" id="action_taken" class="form-control" rows="4"></textarea>
                 </div>
             </div>
             <div class="modal-footer">
@@ -407,42 +431,59 @@
     const statusChoices = JSON.parse(document.getElementById("statusChoicesData").textContent);
 
     document.querySelectorAll(".change-status-btn").forEach(btn => {
-            btn.addEventListener("click", () => {
-                const requestId = btn.dataset.requestId;
-                const currentStatus = btn.dataset.currentStatus;
-                const currentDisplay = btn.dataset.currentStatusDisplay;
+        btn.addEventListener("click", () => {
+            const requestId = btn.dataset.requestId;
+            const currentStatus = btn.dataset.currentStatus;
+            const currentDisplay = btn.dataset.currentStatusDisplay;
 
-                // Set form action dynamically
-                document.getElementById('changeStatusForm').action = `/change-status/${requestId}/`;
+            // Set form action
+            document.getElementById('changeStatusForm').action = `/change-status/${requestId}/`;
+            document.getElementById('modalRequestId').value = requestId;
 
-                // Set hidden input value (optional, in case you still use this too)
-                document.getElementById('modalRequestId').value = requestId;
+            const select = document.getElementById('modalStatusSelect');
+            const actionTakenGroup = document.getElementById('actionTakenGroup');
+            const actionTakenInput = document.getElementById('action_taken');
 
-                const select = document.getElementById('modalStatusSelect');
-                select.innerHTML = '';
+            // Reset and clear
+            select.innerHTML = '';
+            actionTakenGroup.style.display = 'none';
+            actionTakenInput.value = '';
 
-                // Add current status as disabled hidden option
-                const currentOption = document.createElement('option');
-                currentOption.text = `Current: ${currentDisplay}`;
-                currentOption.disabled = true;
-                currentOption.hidden = true;
-                currentOption.selected = true;
-                select.appendChild(currentOption);
+            // Add disabled current status
+            const currentOption = document.createElement('option');
+            currentOption.text = `Current: ${currentDisplay}`;
+            currentOption.disabled = true;
+            currentOption.hidden = true;
+            currentOption.selected = true;
+            select.appendChild(currentOption);
 
-                // Add other status options
-                statusChoices.forEach(([code, display]) => {
-                    if (code !== currentStatus) {
-                        const option = document.createElement('option');
-                        option.value = code;
-                        option.text = display;
-                        select.appendChild(option);
-                    }
-                });
+            // Add other status options
+            statusChoices.forEach(([code, display]) => {
+                if (code !== currentStatus) {
+                    const option = document.createElement('option');
+                    option.value = code;
+                    option.text = display;
+                    select.appendChild(option);
+                }
             });
+
+            // Attach change listener here (ONLY here)
+            select.addEventListener('change', function () {
+                console.log('Selected value:', this.value); // <-- Debug log
+
+                if (this.value.toLowerCase() === 'completed') {
+                    actionTakenGroup.style.display = 'block';
+                } else {
+                    actionTakenGroup.style.display = 'none';
+                    actionTakenInput.value = '';
+                }
+            });
+            
+            // Force check immediately (in case it's already set to 'completed')
+            select.dispatchEvent(new Event('change'));
+
         });
-
+    });
 </script>
-
-
 
 {% endblock %}
