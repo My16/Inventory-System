@@ -178,7 +178,101 @@
         <main class="flex-grow-1">
             <!-- Your main content here -->
             <div class="">
-                {% block content %} {% endblock content %}
+                {% block content %} 
+                <div class="container mt-4">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <div class="card text-white bg-primary h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">Total Number of Requests</h5>
+                                    <p class="card-text fs-4">{{ total_requests }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-white bg-info h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">Number of Requests Today</h5>
+                                    <p class="card-text fs-4">{{ total_requests_today }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-white bg-warning h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">Requests Assigned to You</h5>
+                                    <p class="card-text fs-4">{{ assigned_count }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-white bg-success h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">Requests you Completed</h5>
+                                    <p class="card-text fs-4">{{ completed_by_user }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Line Chart Show -->
+                    <div style="position: relative; width: 100%; max-width: 1000px; margin: auto;">
+                        <canvas id="itLineChart" style="background: white;"></canvas>
+                    </div>
+                </div>
+
+                <!-- Safely embed data in hidden script tags -->
+
+                {{ line_chart_labels|json_script:"line-chart-labels" }}
+                {{ line_chart_datasets|json_script:"line-chart-datasets" }}
+
+
+                <script>
+                    const lineChartLabels = JSON.parse(document.getElementById('line-chart-labels').textContent);
+                    const lineChartDatasets = JSON.parse(document.getElementById('line-chart-datasets').textContent);
+
+                    const ctx = document.getElementById('itLineChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: lineChartLabels,
+                            datasets: lineChartDatasets.map(set => ({
+                                label: set.label,
+                                data: set.data,
+                                fill: false,
+                                tension: 0.2,
+                                borderWidth: 2
+                            }))
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: 'Completed Requests per IT User Over Time'
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    title: {
+                                        display: true,
+                                        text: 'Completed Requests'
+                                    }
+                                },
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Date'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                </script>
+
+
+                {% endblock content %}
+
             </div>
         </main>
         <footer>

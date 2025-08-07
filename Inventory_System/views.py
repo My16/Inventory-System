@@ -21,6 +21,10 @@ from django.utils import timezone
 from django.db.models import Q
 from django.views.decorators.http import require_POST
 from django.http import HttpResponseForbidden
+from django.utils.timezone import now
+from django.db.models import Count
+from django.db.models.functions import TruncDate
+from collections import defaultdict
 
 
 
@@ -64,10 +68,64 @@ def user_login(request):
 def homepage(request):
     user = request.user
     user_permissions = request.session.get("user_permissions", [])
-
+    is_it = user.groups.filter(name='IT').exists()
     display_name = user.get_full_name() if user.get_full_name() else user.username
 
-    context = {"display_name": display_name, "useer_permissions": user_permissions}
+    # Total number of service requests
+    total_requests = ServiceRequest.objects.count()
+
+    # Total number of service requests today
+    today = now().date()
+    total_requests_today = ServiceRequest.objects.filter(submission_date__date=today).count()
+
+    # Requests assigned to current IT user
+    assigned_to_user = ServiceRequest.objects.filter(assigned_to=user)
+    assigned_count = assigned_to_user.count()
+
+    # Completed requests by current IT user
+    completed_by_user = assigned_to_user.filter(status='Completed').count()
+
+    # Group by assigned IT personnel and date
+    completed_by_it_and_date = (
+        ServiceRequest.objects
+        .filter(status='Completed')
+        .annotate(date=TruncDate('submission_date'))
+        .values('assigned_to__username', 'date')
+        .annotate(count=Count('id'))
+        .order_by('date')
+    )
+
+    # Format data
+    chart_dict = defaultdict(lambda: defaultdict(int))
+    dates_set = set()
+
+    for entry in completed_by_it_and_date:
+        username = entry['assigned_to__username']
+        date = entry['date'].strftime('%Y-%m-%d')
+        chart_dict[username][date] = entry['count']
+        dates_set.add(date)
+
+    sorted_dates = sorted(list(dates_set))
+
+    line_chart_datasets = []
+    for username, counts in chart_dict.items():
+        data = [counts.get(date, 0) for date in sorted_dates]
+        line_chart_datasets.append({
+            'label': username,
+            'data': data,
+        })
+
+    context = {
+        'total_requests': total_requests,
+        'total_requests_today': total_requests_today,
+        'assigned_count': assigned_count,
+        'completed_by_user': completed_by_user,
+        "display_name": display_name,
+        "user_permissions": user_permissions,
+        'line_chart_labels': sorted_dates,
+        'line_chart_datasets': line_chart_datasets,
+        'is_it': is_it,
+    }
 
     return render(request, 'home.html', context)
 
