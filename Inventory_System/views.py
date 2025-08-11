@@ -25,8 +25,8 @@ from django.utils.timezone import now
 from django.db.models import Count
 from django.db.models.functions import TruncDate
 from collections import defaultdict
-
-
+import random, colorsys
+from collections import defaultdict
 
 # Create your views here.
 def loginPage(request):
@@ -62,7 +62,15 @@ def user_login(request):
 
     return redirect("loginpage")
 
-
+def generate_distinct_colors(n):
+    colors = []
+    for i in range(n):
+        hue = i * (360/n)
+        sat = 70 + random.randint(-10, 10)
+        light = 50 + random.randint(-10, 10)
+        rgb = colorsys.hsv_to_rgb(hue/360, sat/100, light/100)
+        colors.append(f"rgba({int(rgb[0]*255)}, {int(rgb[1]*255)}, {int(rgb[2]*255)}, 0.7)")
+    return colors
 
 @login_required(login_url='/login/')
 def homepage(request):
@@ -95,6 +103,14 @@ def homepage(request):
         .order_by('date')
     )
 
+    # Data for bar chart (total requests per office)
+    requests_per_office = (
+        ServiceRequest.objects
+        .values('office__abbreviation')
+        .annotate(total=Count('id'))
+        .order_by('-total')  # Optional: sort by most requests first
+    )
+
     # Format data
     chart_dict = defaultdict(lambda: defaultdict(int))
     dates_set = set()
@@ -115,6 +131,14 @@ def homepage(request):
             'data': data,
         })
 
+    # Format bar chart data
+    bar_chart_labels = [
+    entry['office__abbreviation'] or entry['office__office_name'][:3].upper() 
+    for entry in requests_per_office
+    ]
+    bar_chart_data = [entry['total'] for entry in requests_per_office]
+    bar_chart_colors = generate_distinct_colors(len(bar_chart_labels))
+
     context = {
         'total_requests': total_requests,
         'total_requests_today': total_requests_today,
@@ -124,6 +148,9 @@ def homepage(request):
         "user_permissions": user_permissions,
         'line_chart_labels': sorted_dates,
         'line_chart_datasets': line_chart_datasets,
+        'bar_chart_labels': bar_chart_labels,
+        'bar_chart_data': bar_chart_data,
+        'bar_chart_colors': bar_chart_colors,
         'is_it': is_it,
     }
 

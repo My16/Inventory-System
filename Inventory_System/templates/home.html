@@ -215,8 +215,32 @@
                         </div>
                     </div>
                     <!-- Line Chart Show -->
-                    <div style="position: relative; width: 100%; max-width: 1000px; margin: auto;">
+                    <!-- <div style="position: relative; width: 100%; max-width: 1000px; margin: auto;">
                         <canvas id="itLineChart" style="background: white;"></canvas>
+                    </div> -->
+
+
+                    <div class="container mt-4">
+                    <div class="row">
+                        <!-- Line Chart Column -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">Completed Requests per IT User Over Time</h5>
+                                    <canvas id="itLineChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Bar Chart Column -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">Total Requests per Office</h5>
+                                    <canvas id="officeBarChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -224,14 +248,16 @@
 
                 {{ line_chart_labels|json_script:"line-chart-labels" }}
                 {{ line_chart_datasets|json_script:"line-chart-datasets" }}
-
+                {{ bar_chart_labels|json_script:"bar-chart-labels" }}
+                {{ bar_chart_data|json_script:"bar-chart-data" }}
+                {{ bar_chart_colors|json_script:"bar-chart-colors" }}
 
                 <script>
+                    // Line Chart (using json_script)
                     const lineChartLabels = JSON.parse(document.getElementById('line-chart-labels').textContent);
                     const lineChartDatasets = JSON.parse(document.getElementById('line-chart-datasets').textContent);
 
-                    const ctx = document.getElementById('itLineChart').getContext('2d');
-                    new Chart(ctx, {
+                    new Chart(document.getElementById('itLineChart').getContext('2d'), {
                         type: 'line',
                         data: {
                             labels: lineChartLabels,
@@ -273,8 +299,54 @@
                             }
                         }
                     });
-                </script>
 
+                    // Bar Chart (using json_script)
+                    const barChartLabels = JSON.parse(document.getElementById('bar-chart-labels').textContent);
+                    const barChartData = JSON.parse(document.getElementById('bar-chart-data').textContent);
+                    const barChartColors = JSON.parse(document.getElementById('bar-chart-colors').textContent);
+
+                    new Chart(document.getElementById('officeBarChart').getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: barChartLabels,
+                            datasets: [{
+                                label: 'Total Requests',
+                                data: barChartData,
+                                backgroundColor: barChartColors,
+                                borderColor: barChartColors.map(c => c.replace('0.7', '1')),
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: 'Total Requests per Office'
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    title: {
+                                        display: true,
+                                        text: 'Number of Requests'
+                                    }
+                                },
+                                x: {
+                                    ticks: {
+                                        maxRotation: 45,
+                                        minRotation: 45
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'Office'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                </script>
 
                 {% endblock content %}
 
