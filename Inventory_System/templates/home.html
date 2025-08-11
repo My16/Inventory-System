@@ -253,10 +253,15 @@
                             },
                             scales: {
                                 y: {
-                                    beginAtZero: true,
+                                    beginAtZero: false,
+                                    min: 0,
+                                    max: 15,
                                     title: {
                                         display: true,
                                         text: 'Completed Requests'
+                                    },
+                                    ticks: {
+                                        stepSize: 1
                                     }
                                 },
                                 x: {
