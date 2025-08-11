@@ -226,7 +226,7 @@
                         <div class="col-md-6">
                             <div class="card">
                                 <div class="card-body">
-                                    <h5 class="card-title">Completed Requests per IT User Over Time</h5>
+                                    <!-- <h5 class="card-title">Completed Requests per IT User Over Time</h5> -->
                                     <canvas id="itLineChart"></canvas>
                                 </div>
                             </div>
@@ -236,7 +236,7 @@
                         <div class="col-md-6">
                             <div class="card">
                                 <div class="card-body">
-                                    <h5 class="card-title">Total Requests per Office</h5>
+                                    <!-- <h5 class="card-title">Total Requests per Office</h5> -->
                                     <canvas id="officeBarChart"></canvas>
                                 </div>
                             </div>
@@ -274,7 +274,13 @@
                             plugins: {
                                 title: {
                                     display: true,
-                                    text: 'Completed Requests per IT User Over Time'
+                                    text: 'Completed Requests per IT User Over Time',
+                                    font: {
+                                        size: 20,     // increase or decrease title size
+                                        weight: 'bold',
+                                        family: 'Arial'
+                                    },
+                                    color: '#333'    // title text color
                                 }
                             },
                             scales: {
@@ -305,13 +311,17 @@
                     const barChartData = JSON.parse(document.getElementById('bar-chart-data').textContent);
                     const barChartColors = JSON.parse(document.getElementById('bar-chart-colors').textContent);
 
-                    new Chart(document.getElementById('officeBarChart').getContext('2d'), {
+                    // Track hidden bars
+                    let hiddenBars = new Array(barChartLabels.length).fill(false);
+
+                    const ctx = document.getElementById('officeBarChart').getContext('2d');
+                    const officeBarChart = new Chart(ctx, {
                         type: 'bar',
                         data: {
                             labels: barChartLabels,
                             datasets: [{
-                                label: 'Total Requests',
-                                data: barChartData,
+                                label: 'Requests',
+                                data: [...barChartData], // clone so we can restore later
                                 backgroundColor: barChartColors,
                                 borderColor: barChartColors.map(c => c.replace('0.7', '1')),
                                 borderWidth: 1
@@ -319,10 +329,56 @@
                         },
                         options: {
                             responsive: true,
+                            animation: {
+                                duration: 400, // smooth fade
+                                easing: 'easeInOutCubic'
+                            },
                             plugins: {
                                 title: {
                                     display: true,
-                                    text: 'Total Requests per Office'
+                                    text: 'Total Requests per Office',
+                                    font: {
+                                        size: 20,     // increase or decrease title size
+                                        weight: 'bold',
+                                        family: 'Arial'
+                                    },
+                                    color: '#333'    // title text color
+                                },
+                                legend: {
+                                    display: true,
+                                    position: 'right',
+                                    labels: {
+                                        generateLabels: function(chart) {
+                                            const dataset = chart.data.datasets[0];
+                                            return chart.data.labels.map((label, i) => ({
+                                                text: label,
+                                                fillStyle: dataset.backgroundColor[i],
+                                                strokeStyle: dataset.borderColor[i],
+                                                lineWidth: 1,
+                                                hidden: hiddenBars[i],
+                                                index: i
+                                            }));
+                                        }
+                                    },
+                                    onClick: function(e, legendItem, legend) {
+                                        const index = legendItem.index;
+                                        const ds = legend.chart.data.datasets[0];
+
+                                        // Toggle hidden state
+                                        hiddenBars[index] = !hiddenBars[index];
+                                        
+                                        // Set to null if hidden, restore if visible
+                                        ds.data[index] = hiddenBars[index] ? null : barChartData[index];
+
+                                        legend.chart.update();
+                                    }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return `${context.label}: ${context.parsed.y} requests`;
+                                        }
+                                    }
                                 }
                             },
                             scales: {
@@ -331,21 +387,23 @@
                                     title: {
                                         display: true,
                                         text: 'Number of Requests'
+                                    },
+                                    ticks: {
+                                        stepSize: 1,
+                                        callback: function(value) {
+                                            return Number.isInteger(value) ? value : '';
+                                        }
                                     }
                                 },
                                 x: {
-                                    ticks: {
-                                        maxRotation: 45,
-                                        minRotation: 45
-                                    },
-                                    title: {
-                                        display: true,
-                                        text: 'Office'
-                                    }
+                                    categoryPercentage: 0.8,
+                                    barPercentage: 0.9
                                 }
                             }
                         }
                     });
+
+
                 </script>
 
                 {% endblock content %}
@@ -361,7 +419,7 @@
     <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header">
+                <div class="modal-header bg-success text-white">
                     <h5 class="modal-title" id="changePasswordModalLabel">Change Password for <span id="changePasswordUser"></span></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
