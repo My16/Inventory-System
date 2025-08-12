@@ -37,7 +37,12 @@
         </thead>
         <tbody>
             {% for request in page_obj %}
-            <tr {% if request.assigned_to == user %}class="table-success"{% endif %}>
+            <tr 
+                {% if request.assigned_to == user and request.status == "Pending" %}
+                    class="table-warning"
+                {% elif request.assigned_to == user and request.status == "Completed" %}
+                    class="table-success"
+                {% endif %}>
                 <td>{{ request.id }}</td>
                 <td>{{ request.submission_date|date:"Y-m-d H:i" }}</td>
                 <td><strong>{{ request.service_category.name }}</strong></td>
@@ -57,7 +62,18 @@
                     <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"></button>
                     <ul class="dropdown-menu">
                         <li>
-                            <a class="dropdown-item text-primary change-password" href="#" data-id="{{ user.id }}" data-username="{{ user.username }}">
+                            <a class="dropdown-item text-primary view-request-btn"
+                            href="#"
+                            data-bs-toggle="modal"
+                            data-bs-target="#viewServiceRequestModal"
+                            data-id="{{ request.id }}"
+                            data-date="{{ request.submission_date|date:'Y-m-d H:i' }}"
+                            data-category="{{ request.service_category.name }}"
+                            data-description="{{ request.description }}"
+                            data-requestor="{{ request.requestor.get_full_name }}"
+                            data-status="{{ request.status }}"
+                            data-assigned="{{ request.assigned_to.get_full_name|default:'—' }}"
+                            data-action="{{ request.action_taken|default:'No action taken' }}">
                                 <i class="fas fa-eye"></i> View
                             </a>
                         </li>
@@ -96,6 +112,33 @@
             {% endfor %}
         </tbody>
     </table>
+
+    <div class="modal fade" id="viewServiceRequestModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Service Request Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+                <div class="modal-body">
+                    <table class="table table-bordered">
+                    <tr><th>ID</th><td id="view-id"></td></tr>
+                    <tr><th>Submission Date</th><td id="view-date"></td></tr>
+                    <tr><th>Service Category</th><td id="view-category"></td></tr>
+                    <tr><th>Description</th><td id="view-description"></td></tr>
+                    <tr><th>Requestor</th><td id="view-requestor"></td></tr>
+                    <tr><th>Status</th><td id="view-status"></td></tr>
+                    <tr><th>Assigned To</th><td id="view-assigned"></td></tr>
+                    <tr><th>Action Taken</th><td id="view-action"></td></tr>
+                    </table>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     
     <!-- this is for the pages -->
     <div class="pagination">
@@ -482,6 +525,23 @@
             // Force check immediately (in case it's already set to 'completed')
             select.dispatchEvent(new Event('change'));
 
+        });
+    });
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".view-request-btn").forEach(btn => {
+            btn.addEventListener("click", function () {
+                document.getElementById("view-id").textContent = this.dataset.id;
+                document.getElementById("view-date").textContent = this.dataset.date;
+                document.getElementById("view-category").textContent = this.dataset.category;
+                document.getElementById("view-description").textContent = this.dataset.description;
+                document.getElementById("view-requestor").textContent = this.dataset.requestor;
+                document.getElementById("view-status").textContent = this.dataset.status;
+                document.getElementById("view-assigned").textContent = this.dataset.assigned;
+                document.getElementById("view-action").textContent = this.dataset.action;
+            });
         });
     });
 </script>
