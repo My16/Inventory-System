@@ -40,8 +40,12 @@
             <tr 
                 {% if request.assigned_to == user and request.status == "Pending" %}
                     class="table-warning"
+                {% elif request.assigned_to == user and request.status == "In Progress" %}
+                    class="table-primary"
                 {% elif request.assigned_to == user and request.status == "Completed" %}
                     class="table-success"
+                {% elif request.assigned_to == user and request.status == "Cancelled" %}
+                    class="table-danger"
                 {% endif %}>
                 <td>{{ request.id }}</td>
                 <td>{{ request.submission_date|date:"Y-m-d H:i" }}</td>
@@ -79,7 +83,7 @@
                         </li>
 
                         {% if is_it and request.assigned_to == user %}
-                            {% if request.status == "Completed" and request.action_taken %}
+                            {% if request.status == "Completed" or request.status == "Cancelled" %}
                                 <span class="dropdown-item text-muted disabled">
                                     <i class="fas fa-lock"></i> Status Locked
                                 </span>
@@ -96,11 +100,29 @@
                             {% endif %}
                         {% endif %}
                        
-                        <!-- <li>
-                            <a class="dropdown-item text-danger delete-user" href="#" data-id="{{ user.id }}">
-                                <i class="fas fa-trash-alt"></i> Delete
-                            </a>
-                        </li> -->
+                       <!-- Requestor - Cancel -->
+                        {% if request.requestor == user and request.status == "Pending" %}
+                            <li>
+                                <form method="POST" action="{% url 'cancel_service_request' request.id %}" 
+                                    onsubmit="return confirm('Are you sure you want to cancel this request?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="dropdown-item text-danger">
+                                        <i class="fas fa-times-circle"></i> Cancel Request
+                                    </button>
+                                </form>
+                            </li>
+                        {% endif %}
+
+                        <!-- Print option for both IT and End User if Completed -->
+                        {% if request.status == "Completed" %}
+                            <li>
+                                <a class="dropdown-item text-success" 
+                                href="" 
+                                target="_blank">
+                                    <i class="fas fa-print"></i> Print Service Request
+                                </a>
+                            </li>
+                        {% endif %}
                     </ul>
                 </div>
                 </td>
@@ -127,12 +149,15 @@
                     <tr><th>Service Category</th><td id="view-category"></td></tr>
                     <tr><th>Description</th><td id="view-description"></td></tr>
                     <tr><th>Requestor</th><td id="view-requestor"></td></tr>
-                    <tr><th>Status</th><td id="view-status"></td></tr>
+                    <tr><th>Status</th><td><span id="view-status" class="badge"></span></td></tr>
                     <tr><th>Assigned To</th><td id="view-assigned"></td></tr>
                     <tr><th>Action Taken</th><td id="view-action"></td></tr>
                     </table>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <a id="print-button" href="#" class="btn btn-success text-white d-none" target="_blank">
+                            <i class="bi bi-printer"></i> Print Service Request
+                        </a>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     </div>
                 </div>
             </div>
@@ -541,6 +566,35 @@
                 document.getElementById("view-status").textContent = this.dataset.status;
                 document.getElementById("view-assigned").textContent = this.dataset.assigned;
                 document.getElementById("view-action").textContent = this.dataset.action;
+
+                let statusEl = document.getElementById("view-status");
+                statusEl.textContent = this.dataset.status;
+
+                // Reset classes
+                statusEl.className = "badge";
+
+                // Apply color based on status
+                if (this.dataset.status.toLowerCase() === "pending") {
+                    statusEl.classList.add("bg-warning", "text-dark");
+                } else if (this.dataset.status.toLowerCase() === "in progress") {
+                    statusEl.classList.add("bg-primary");
+                } else if (this.dataset.status.toLowerCase() === "completed") {
+                    statusEl.classList.add("bg-success");
+                } else {
+                    statusEl.classList.add("bg-secondary");
+                }
+
+                // Show/Hide Print button if status is Completed
+                const printBtn = document.getElementById('print-button');
+                const status = this.dataset.status.trim().toLowerCase();
+                const id = this.dataset.id;
+
+                if (status === "completed") {
+                    printBtn.classList.remove('d-none');
+                    printBtn.href = `/print_service_request/${id}/`; // Django print URL
+                } else {
+                    printBtn.classList.add('d-none');
+                }
             });
         });
     });

@@ -447,7 +447,7 @@ def service_request(request):
     service_categories = ServiceCategory.objects.all()
 
     # ✅ Pagination
-    paginator = Paginator(service_requests, 10)  # Show 10 per page
+    paginator = Paginator(service_requests, 6)  # Show 10 per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
@@ -493,3 +493,24 @@ def change_status(request, request_id):
         service_request.save()
 
     return redirect('service_request')
+
+
+@require_POST
+@login_required
+def cancel_service_request(request, request_id):
+    service_request = get_object_or_404(ServiceRequest, id=request_id)
+
+    # ✅ Only requestor can cancel
+    if service_request.requestor != request.user:
+        return HttpResponseForbidden("You are not authorized to cancel this request.")
+
+    # ✅ Only allow cancel if pending
+    if service_request.status.lower() != "pending":
+        messages.error(request, "Only pending requests can be canceled.")
+        return redirect("service_request")
+
+    service_request.status = "Cancelled"
+    service_request.save()
+
+    messages.success(request, f"Request #{service_request.id} has been cancelled.")
+    return redirect("service_request")

@@ -26,5 +26,6 @@ urlpatterns = [
     path("get-user-permissions/<int:user_id>/", views.get_user_permissions, name="get_user_permissions"),
     path("service-request/", views.service_request, name="service_request"),
     path('logout/', CustomLogoutView.as_view(next_page=settings.LOGOUT_REDIRECT_URL), name='logout'),
-    path('change-status/<int:request_id>/', views.change_status, name='change_status')
+    path('change-status/<int:request_id>/', views.change_status, name='change_status'),
+    path("cancel-request/<int:request_id>/", views.cancel_service_request, name="cancel_service_request"),
 ]

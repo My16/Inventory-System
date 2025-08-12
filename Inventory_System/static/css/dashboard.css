@@ -127,3 +127,10 @@ footer {
 .navbar {
     padding: 1px 1px; /* Adjust overall navbar spacing */
 }
+
+.navbar-wrapper {
+    position: sticky;
+    top: 0;
+    z-index: 1030; /* Make sure it stays above page content */
+}
+
