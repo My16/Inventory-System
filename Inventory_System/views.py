@@ -8,7 +8,7 @@ from .models import Office, ServiceRequest, ServiceCategory
 from .forms import OfficeForm
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-import json
+import json, random, colorsys, io, os, unicodedata
 from django.shortcuts import get_object_or_404
 from django.utils.timezone import localtime
 from django.core.paginator import Paginator
@@ -25,8 +25,11 @@ from django.utils.timezone import now
 from django.db.models import Count
 from django.db.models.functions import TruncDate
 from collections import defaultdict
-import random, colorsys
 from collections import defaultdict
+from django.http import FileResponse, Http404
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from PyPDF2 import PdfReader, PdfWriter
 
 # Create your views here.
 def loginPage(request):
@@ -514,3 +517,107 @@ def cancel_service_request(request, request_id):
 
     messages.success(request, f"Request #{service_request.id} has been cancelled.")
     return redirect("service_request")
+
+
+# printing service request
+def print_service_request(request, pk):
+    try:
+        sr = ServiceRequest.objects.get(pk=pk)
+    except ServiceRequest.DoesNotExist:
+        raise Http404("Service request not found")
+
+    # Path to your PDF template
+    template_path = os.path.join(settings.BASE_DIR, "Inventory_System/static/forms/Service Request.pdf")
+
+    # Create a buffer for the overlay
+    packet = io.BytesIO()
+    can = canvas.Canvas(packet, pagesize=letter)
+
+    # Normalization function for dash/spacing issues
+    def normalize_text(text):
+        text = unicodedata.normalize('NFKC', text)  # normalize Unicode
+        text = text.replace("–", "-")  # en dash → hyphen
+        text = text.replace("—", "-")  # em dash → hyphen
+        return text.strip().lower()
+
+    normalized_category = normalize_text(sr.service_category.name)
+
+    # --- Category checkmark positions (Y-coordinate mapping) ---
+    category_positions = {
+        normalize_text("Repair of IT Equipment"): 606,
+        normalize_text("Preventive Maintenance of IT Equipment"): 594,
+        normalize_text("System Enhancement/Modification"): 581,
+        normalize_text("Database Management and Administration (iHOMIS/iHOMIS+)"): 569,
+        normalize_text("Network Installation"): 557,
+        normalize_text("Internet Connections"): 545,
+        normalize_text("Website Uploads"): 533,
+        normalize_text("Technical Assistance"): 521,
+        normalize_text("System Testing and Orientation"): 508,
+        normalize_text("Training - iHOMIS Orientation/Computer Literacy"): 496,
+        normalize_text("User Account Management"): 484,
+        normalize_text("Others"): 472,
+    }
+
+    # --- Draw checkmark if matched ---
+    if normalized_category in category_positions:
+        can.setFont("Helvetica-Bold", 12)
+        can.drawString(38, category_positions[normalized_category], "✓")
+
+    # Helper function: wrap text by width
+    def draw_wrapped_text(can, text, x, y, max_width, font_name="Helvetica", font_size=10, line_height=12, spacing_multiplier=1.0):
+        can.setFont(font_name, font_size)
+        words = text.split()
+        lines = []
+        current_line = ""
+
+        for word in words:
+            test_line = current_line + (" " if current_line else "") + word
+            if can.stringWidth(test_line, font_name, font_size) <= max_width:
+                current_line = test_line
+            else:
+                lines.append(current_line)
+                current_line = word
+        if current_line:
+            lines.append(current_line)
+
+        # Apply spacing multiplier (e.g., 1.5 for 1.5 spacing)
+        spacing = line_height * spacing_multiplier
+
+        for i, line in enumerate(lines):
+            can.drawString(x, y - (i * spacing), line)
+
+
+
+
+    # --- Fill in text fields ---
+    can.setFont("Helvetica", 10)
+    can.drawString(465, 670, sr.submission_date.strftime("%m   %d    %Y"))
+    draw_wrapped_text(can, sr.description, 290, 605, max_width=260, spacing_multiplier=1.3)
+    can.drawString(165, 670, sr.requestor.get_full_name())
+    can.drawString(165, 655, sr.office.location or "—")
+    can.drawString(400, 235, sr.assigned_to.get_full_name() if sr.assigned_to else "—")
+    can.drawString(45, 235, sr.submission_date.strftime("%m/%d/%Y"))
+    draw_wrapped_text(can, sr.action_taken or "No action taken", x=190, y=235, max_width=190, spacing_multiplier=1.3)
+    can.drawString(325, 180, sr.submission_date.strftime("%m     %d    %Y"))
+    can.drawString(325, 82, sr.submission_date.strftime("%m     %d    %Y"))
+
+    # Save overlay
+    can.save()
+    packet.seek(0)
+
+    # Merge overlay with template PDF
+    overlay_pdf = PdfReader(packet)
+    existing_pdf = PdfReader(open(template_path, "rb"))
+    output = PdfWriter()
+
+    page = existing_pdf.pages[0]
+    page.merge_page(overlay_pdf.pages[0])
+    output.add_page(page)
+
+    # Create final PDF in memory
+    result_stream = io.BytesIO()
+    output.write(result_stream)
+    result_stream.seek(0)
+
+    # Return the PDF
+    return FileResponse(result_stream, as_attachment=False, filename=f"ServiceRequest_{sr.id}.pdf")

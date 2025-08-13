@@ -117,7 +117,7 @@
                         {% if request.status == "Completed" %}
                             <li>
                                 <a class="dropdown-item text-success" 
-                                href="" 
+                                href="{% url 'print_service_request' request.id %}" 
                                 target="_blank">
                                     <i class="fas fa-print"></i> Print Service Request
                                 </a>
@@ -154,7 +154,7 @@
                     <tr><th>Action Taken</th><td id="view-action"></td></tr>
                     </table>
                     <div class="modal-footer">
-                        <a id="print-button" href="#" class="btn btn-success text-white d-none" target="_blank">
+                        <a id="print-button" href="" class="btn btn-success text-white d-none" target="_blank">
                             <i class="bi bi-printer"></i> Print Service Request
                         </a>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
