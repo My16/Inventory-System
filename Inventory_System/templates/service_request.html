@@ -24,7 +24,7 @@
     <table class="table table-bordered">
         <thead class="table">
             <tr>
-                <th>ID</th>
+                <th>No.</th>
                 <th>Submission Date</th>
                 <th>Service Category</th>
                 <th>Description</th>
@@ -47,7 +47,7 @@
                 {% elif request.assigned_to == user and request.status == "Cancelled" %}
                     class="table-danger"
                 {% endif %}>
-                <td>{{ request.id }}</td>
+                <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
                 <td>{{ request.submission_date|date:"Y-m-d H:i" }}</td>
                 <td><strong>{{ request.service_category.name }}</strong></td>
                 <td>{{ request.description }}</td>

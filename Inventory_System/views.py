@@ -164,7 +164,7 @@ def add_office(request):
     user = request.user
     offices = Office.objects.all().order_by("id")  # Ascending order
 
-    paginator = Paginator(offices, 14) #show 20 offices per page
+    paginator = Paginator(offices, 10) #show 10 offices per page
 
     page_number = request.GET.get('page') #Get the current page number
     page_obj = paginator.get_page(page_number) #Get the page object
@@ -248,7 +248,7 @@ def list_users(request):
     users = User.objects.all().order_by("id")  # Fetch all users ordered by ID
     offices = Office.objects.all().order_by("id")  # Fetch all offices
 
-    paginator = Paginator(users, 14)  # Show 14 users per page
+    paginator = Paginator(users, 10)  # Show 10 users per page
     page_number = request.GET.get('page')  # Get the current page number
     page_obj = paginator.get_page(page_number)  # Get the paginated users
 
@@ -450,7 +450,7 @@ def service_request(request):
     service_categories = ServiceCategory.objects.all()
 
     # ✅ Pagination
-    paginator = Paginator(service_requests, 6)  # Show 10 per page
+    paginator = Paginator(service_requests, 10)  # Show 10 per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 

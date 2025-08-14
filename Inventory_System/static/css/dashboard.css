@@ -5,6 +5,11 @@
 .bg-orange { background-color: #FF9800; }
 .bg-blue { background-color: #607D8B; }
 
+body {
+    padding-bottom: 50px; /* match or exceed your footer height */
+}
+
+
 footer {
     position: fixed;
     bottom: 0;
