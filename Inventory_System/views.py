@@ -30,6 +30,7 @@ from django.http import FileResponse, Http404
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from PyPDF2 import PdfReader, PdfWriter
+from .models import UserProfile
 
 # Create your views here.
 def loginPage(request):
@@ -245,9 +246,9 @@ def update_office(request, office_id):
 def list_users(request):
     user = request.user
     groups = Group.objects.all()
-    users = User.objects.all().order_by("id")  # Fetch all users ordered by ID
+    users = User.objects.all().select_related("userprofile").order_by("id") # Fetch all users ordered by ID
     offices = Office.objects.all().order_by("id")  # Fetch all offices
-
+   
     paginator = Paginator(users, 10)  # Show 10 users per page
     page_number = request.GET.get('page')  # Get the current page number
     page_obj = paginator.get_page(page_number)  # Get the paginated users
@@ -257,6 +258,7 @@ def list_users(request):
         'display_name': user.get_full_name() if user.get_full_name() else user.username,
         'groups': groups,
         'offices': offices,
+
     }
 
     return render(request, "createuser.html", context)
@@ -273,6 +275,7 @@ def create_user(request):
         confirm_password = request.POST['confirm_password']
         group_id = request.POST.get('group')  # Get the selected group ID from the form
         office_id = request.POST.get('office')  # Get the selected office ID from the form
+        position = request.POST.get('position')  # Get the position from the form
 
         # Validate if passwords match
         if password != confirm_password:
@@ -292,7 +295,10 @@ def create_user(request):
         user = User.objects.create_user(username=username, email=email, password=password)
         user.first_name = first_name
         user.last_name = last_name
+        
         user.save()
+
+        UserProfile.objects.create(user=user, position=position)
 
         # Assign Group to user
         if group_id:
@@ -527,7 +533,7 @@ def print_service_request(request, pk):
         raise Http404("Service request not found")
 
     # Path to your PDF template
-    template_path = os.path.join(settings.BASE_DIR, "Inventory_System/static/forms/Service Request.pdf")
+    template_path = os.path.join(settings.BASE_DIR, "Inventory_System/static/forms/FM-IT-001 Service Request.pdf")
 
     # Create a buffer for the overlay
     packet = io.BytesIO()
@@ -593,12 +599,15 @@ def print_service_request(request, pk):
     can.setFont("Helvetica", 10)
     can.drawString(465, 670, sr.submission_date.strftime("%m   %d    %Y"))
     draw_wrapped_text(can, sr.description, 290, 605, max_width=260, spacing_multiplier=1.3)
-    can.drawString(165, 670, sr.requestor.get_full_name())
+    can.drawString(80, 378, sr.requestor.get_full_name())
+    can.drawString(80, 342, sr.requestor.userprofile.position if hasattr(sr.requestor, 'userprofile') and sr.requestor.userprofile.position else "Not specified")
+    can.drawString(165, 670, sr.office.office_name if sr.office else "")
     can.drawString(165, 655, sr.office.location or "—")
     can.drawString(400, 235, sr.assigned_to.get_full_name() if sr.assigned_to else "—")
     can.drawString(45, 235, sr.submission_date.strftime("%m/%d/%Y"))
     draw_wrapped_text(can, sr.action_taken or "No action taken", x=190, y=235, max_width=190, spacing_multiplier=1.3)
     can.drawString(325, 180, sr.submission_date.strftime("%m     %d    %Y"))
+    can.drawString(80, 82, sr.requestor.get_full_name())
     can.drawString(325, 82, sr.submission_date.strftime("%m     %d    %Y"))
 
     # Save overlay

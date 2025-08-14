@@ -1,6 +1,13 @@
 from django.db import models
 from django.contrib.auth.models import User
 
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    position = models.CharField(max_length=255, null=True, blank=True, default="Not specified")
+
+    def __str__(self):
+        return f"{self.user.username} - {self.position}"
+
 class Office(models.Model):
     office_name = models.CharField(max_length=255, unique=True)
     abbreviation = models.CharField(max_length=255, blank=True, null=True)
@@ -22,7 +29,7 @@ class UserPermission(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     permissions = models.ManyToManyField(PermissionOption)  # Many-to-many relationship
     office = models.ForeignKey('Office', on_delete=models.SET_NULL, null=True)
-
+    
     def __str__(self):
         return f"Permissions for {self.user.username}"
 

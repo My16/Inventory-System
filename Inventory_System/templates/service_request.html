@@ -1,6 +1,7 @@
 {% extends "home.html" %} {% block content %} {% load static %}
 
 <link rel="stylesheet" href="{% static 'css/paginator.css' %}">
+<link rel="stylesheet" href="{% static 'css/service_request.css' %}">
 <div class="container mt-4">
     <!-- Add Office Button -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
@@ -52,7 +53,19 @@
                 <td><strong>{{ request.service_category.name }}</strong></td>
                 <td>{{ request.description }}</td>
                 <td>{{ request.requestor.get_full_name }}</td>
-                <td>{{ request.status }}</td>
+                <td>
+                    {% if request.status == "Pending" %}
+                        <span class="badge bg-warning text-dark">Pending</span>
+                    {% elif request.status == "In Progress" %}
+                        <span class="badge bg-primary">In Progress</span>
+                    {% elif request.status == "Completed" %}
+                        <span class="badge bg-success">Completed</span>
+                    {% elif request.status == "Cancelled" %}
+                        <span class="badge bg-danger">Cancelled</span>
+                    {% else %}
+                        <span class="badge bg-secondary">{{ request.status }}</span>
+                    {% endif %}
+                </td>
                 <td>{{ request.assigned_to.get_full_name|default:"—" }}</td>
                 <td>
                     {% if request.action_taken %}
