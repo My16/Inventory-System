@@ -3,7 +3,6 @@ from django.contrib.auth.models import User
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    position = models.CharField(max_length=255, null=True, blank=True, default="Not specified")
 
     def __str__(self):
         return f"{self.user.username} - {self.position}"
@@ -56,6 +55,8 @@ class ServiceRequest(models.Model):
     office = models.ForeignKey(Office, on_delete=models.CASCADE)
     service_category = models.ForeignKey(ServiceCategory, on_delete=models.SET_NULL, null=True)
     description = models.TextField(default="No description provided")
+    employee_name = models.CharField(max_length=255, null=True, blank=True)
+    employee_position = models.CharField(max_length=255, null=True, blank=True, default="Not specified")
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='Pending')
     assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_requests')
     action_taken = models.TextField(blank=True, null=True)

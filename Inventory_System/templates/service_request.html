@@ -28,8 +28,9 @@
                 <th>No.</th>
                 <th>Submission Date</th>
                 <th>Service Category</th>
+                <th>Requesting Employee</th>
                 <th>Description</th>
-                <th>Requestor</th>
+                <th>Requesting Office</th>
                 <th>Status</th>
                 <th>Assigned To</th>
                 <th>Action Taken</th>
@@ -49,10 +50,13 @@
                     class="table-danger"
                 {% endif %}>
                 <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
-                <td>{{ request.submission_date|date:"Y-m-d H:i" }}</td>
+                <td>{{ request.submission_date|date:"m/d/Y h:i A" }}</td>
                 <td><strong>{{ request.service_category.name }}</strong></td>
+                <td>{{ request.employee_name }} <br>
+                    <small class="text-muted">{{ request.employee_position }}</small>
+                </td>
                 <td>{{ request.description }}</td>
-                <td>{{ request.requestor.get_full_name }}</td>
+                <td>{{ request.office.office_name }}</td>
                 <td>
                     {% if request.status == "Pending" %}
                         <span class="badge bg-warning text-dark">Pending</span>
@@ -84,10 +88,12 @@
                             data-bs-toggle="modal"
                             data-bs-target="#viewServiceRequestModal"
                             data-id="{{ request.id }}"
-                            data-date="{{ request.submission_date|date:'Y-m-d H:i' }}"
+                            data-date="{{ request.submission_date|date:'m/d/Y h:i A' }}"
                             data-category="{{ request.service_category.name }}"
+                            data-employee-name="{{ request.employee_name }}"
+                            data-employee-position="{{ request.employee_position }}"
                             data-description="{{ request.description }}"
-                            data-requestor="{{ request.requestor.get_full_name }}"
+                            data-office="{{ request.office.office_name }}"
                             data-status="{{ request.status }}"
                             data-assigned="{{ request.assigned_to.get_full_name|default:'—' }}"
                             data-action="{{ request.action_taken|default:'No action taken' }}">
@@ -160,8 +166,10 @@
                     <tr><th>ID</th><td id="view-id"></td></tr>
                     <tr><th>Submission Date</th><td id="view-date"></td></tr>
                     <tr><th>Service Category</th><td id="view-category"></td></tr>
+                    <tr><th>Employee Name</th><td id="view-employee-name"></td></tr>
+                    <tr><th>Employee Position</th><td id="view-employee-position"></td></tr>
                     <tr><th>Description</th><td id="view-description"></td></tr>
-                    <tr><th>Requestor</th><td id="view-requestor"></td></tr>
+                    <tr><th>Requesting Office</th><td id="view-office"></td></tr>
                     <tr><th>Status</th><td><span id="view-status" class="badge"></span></td></tr>
                     <tr><th>Assigned To</th><td id="view-assigned"></td></tr>
                     <tr><th>Action Taken</th><td id="view-action"></td></tr>
@@ -225,6 +233,19 @@
                                 {% endfor %}
                             </select>
                         </div>
+
+                         <!-- Employee Full Name -->
+                        <div class="mb-3">
+                            <label for="employeeName" class="form-label">Employee Full Name</label>
+                            <input type="text" class="form-control" id="employeeName" name="employee_name" required>
+                        </div>
+
+                        <!-- Employee Position -->
+                        <div class="mb-3">
+                            <label for="employeePosition" class="form-label">Employee Position</label>
+                            <input type="text" class="form-control" id="employeePosition" name="employee_position" required>
+                        </div>
+
                         <div class="mb-3">
                             <label for="requestor" class="form-label">Assigned to</label>
                             <select class="form-select" id="requestor" name="assigned_to" required>
@@ -574,8 +595,10 @@
                 document.getElementById("view-id").textContent = this.dataset.id;
                 document.getElementById("view-date").textContent = this.dataset.date;
                 document.getElementById("view-category").textContent = this.dataset.category;
+                document.getElementById("view-employee-name").textContent = this.dataset.employeeName;
+                document.getElementById("view-employee-position").textContent = this.dataset.employeePosition;
                 document.getElementById("view-description").textContent = this.dataset.description;
-                document.getElementById("view-requestor").textContent = this.dataset.requestor;
+                document.getElementById("view-office").textContent = this.dataset.office;
                 document.getElementById("view-status").textContent = this.dataset.status;
                 document.getElementById("view-assigned").textContent = this.dataset.assigned;
                 document.getElementById("view-action").textContent = this.dataset.action;

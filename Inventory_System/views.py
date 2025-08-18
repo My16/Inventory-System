@@ -275,7 +275,6 @@ def create_user(request):
         confirm_password = request.POST['confirm_password']
         group_id = request.POST.get('group')  # Get the selected group ID from the form
         office_id = request.POST.get('office')  # Get the selected office ID from the form
-        position = request.POST.get('position')  # Get the position from the form
 
         # Validate if passwords match
         if password != confirm_password:
@@ -297,8 +296,6 @@ def create_user(request):
         user.last_name = last_name
         
         user.save()
-
-        UserProfile.objects.create(user=user, position=position)
 
         # Assign Group to user
         if group_id:
@@ -418,6 +415,8 @@ def service_request(request):
         service_category_id = request.POST.get("service_category")
         description = request.POST.get("description")
         assigned_to_id = request.POST.get("assigned_to")
+        employee_name = request.POST.get("employee_name")
+        employee_position = request.POST.get("employee_position")
 
         try:
             category = ServiceCategory.objects.get(id=service_category_id)
@@ -440,6 +439,8 @@ def service_request(request):
                 assigned_to=assigned_to_user,
                 submission_date=timezone.now(),
                 status='Pending',
+                employee_name=employee_name,
+                employee_position=employee_position,
             )
         except (ServiceCategory.DoesNotExist, User.DoesNotExist):
             pass  # You may log this or handle it more gracefully
@@ -599,15 +600,15 @@ def print_service_request(request, pk):
     can.setFont("Helvetica", 10)
     can.drawString(465, 670, sr.submission_date.strftime("%m   %d    %Y"))
     draw_wrapped_text(can, sr.description, 290, 605, max_width=260, spacing_multiplier=1.3)
-    can.drawString(80, 378, sr.requestor.get_full_name())
-    can.drawString(80, 342, sr.requestor.userprofile.position if hasattr(sr.requestor, 'userprofile') and sr.requestor.userprofile.position else "Not specified")
+    can.drawString(80, 378, sr.employee_name if sr.employee_name else "Not specified")
+    can.drawString(80, 342, sr.employee_position if sr.employee_position else "Not specified")
     can.drawString(165, 670, sr.office.office_name if sr.office else "")
     can.drawString(165, 655, sr.office.location or "—")
     can.drawString(400, 235, sr.assigned_to.get_full_name() if sr.assigned_to else "—")
     can.drawString(45, 235, sr.submission_date.strftime("%m/%d/%Y"))
     draw_wrapped_text(can, sr.action_taken or "No action taken", x=190, y=235, max_width=190, spacing_multiplier=1.3)
     can.drawString(325, 180, sr.submission_date.strftime("%m     %d    %Y"))
-    can.drawString(80, 82, sr.requestor.get_full_name())
+    can.drawString(80, 82, sr.employee_name if sr.employee_name else "Not specified")
     can.drawString(325, 82, sr.submission_date.strftime("%m     %d    %Y"))
 
     # Save overlay

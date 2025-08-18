@@ -34,13 +34,6 @@
                 <td>{{ user.first_name }}</td>
                 <td>{{ user.last_name }}</td>
                 <td>{{ user.email }}</td>
-                <td>
-                    {% if user.userprofile %}
-                        {{ user.userprofile.position }}
-                    {% else %}
-                        Not specified
-                    {% endif %}
-                </td>
                 <td>{{ user.date_joined }}</td>
                 <td>
                     <div class="dropdown">
@@ -134,12 +127,6 @@
                                 <option value="{{ office.id }}">{{ office.office_name }}</option>
                             {% endfor %}
                         </select>
-                    </div>
-
-                    <!-- Assign to Position -->
-                    <div class="mb-3">
-                        <label for="position" class="form-label">Assign to Position</label>
-                        <input type="text" class="form-control" id="position" name="position">
                     </div>
 
                     <!-- Assign to Group -->
