@@ -29,4 +29,8 @@ urlpatterns = [
     path('change-status/<int:request_id>/', views.change_status, name='change_status'),
     path("cancel-request/<int:request_id>/", views.cancel_service_request, name="cancel_service_request"),
     path("print_service_request/<int:pk>/", views.print_service_request, name="print_service_request"),
+    path("encoding-error/", views.encoding_error, name="encoding_error"),
+    path("encoding-error/change-status/", views.change_encoding_status, name="change_encoding_status"),
+    path("encoding-error/edit/", views.edit_encoding_error, name="edit_encoding_error"),
+    path("encoding-error/print/<int:pk>/", views.print_encoding_error, name="print_encoding_error"),
 ]

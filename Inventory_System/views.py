@@ -30,7 +30,8 @@ from django.http import FileResponse, Http404
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from PyPDF2 import PdfReader, PdfWriter
-from .models import UserProfile
+from .models import UserProfile, EncodingErrorRequest
+from datetime import timedelta
 
 # Create your views here.
 def loginPage(request):
@@ -631,3 +632,201 @@ def print_service_request(request, pk):
 
     # Return the PDF
     return FileResponse(result_stream, as_attachment=False, filename=f"ServiceRequest_{sr.id}.pdf")
+
+@login_required(login_url='/login/')
+def encoding_error(request):
+    user = request.user
+    is_it = user.groups.filter(name="IT").exists()
+
+    if request.method == "POST":
+        # Extract form data
+        date = request.POST.get("date")
+        time = request.POST.get("time")
+        area_section = request.POST.get("area_section")
+        hospital_no = request.POST.get("hospital_no")
+        patient_name = request.POST.get("patient_name")
+        encoding_error_details = request.POST.get("encoding_error_details")
+        correct_data_details = request.POST.get("correct_data_details")
+        encoded_by = request.POST.get("encoded_by")
+        encoded_date = request.POST.get("encoded_date")
+        noted_by = request.POST.get("noted_by")
+        noted_date = request.POST.get("noted_date")
+        status = request.POST.get("status", "Pending")
+
+        # Save to database
+        EncodingErrorRequest.objects.create(
+            date=date,
+            time=time,
+            area_section=area_section,
+            hospital_no=hospital_no,
+            patient_name=patient_name,
+            encoding_error_details=encoding_error_details,
+            correct_data_details=correct_data_details,
+            encoded_by=encoded_by,
+            encoded_date=encoded_date if encoded_date else None,
+            noted_by=noted_by if noted_by else None,
+            noted_date=noted_date if noted_date else None,
+
+            # ✅ Always set verified by
+            verified_by="Joselito Esteban A. Biscocho",
+            verified_date=timezone.now().date(),  # auto-stamp the date
+
+            status=status,
+        )
+
+        messages.success(request, "Encoding Error Request added successfully!")
+        return redirect("encoding_error")  # redirect to same page after save
+
+    # GET: show list with pagination
+    encoding_list = EncodingErrorRequest.objects.all().order_by("-created_at")
+    paginator = Paginator(encoding_list, 10)  # 10 records per page
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)  # alias for template
+    encoding_requests = page_obj
+
+    context = {
+        "encoding_requests": encoding_requests,
+        "page_obj": page_obj,
+        "is_it": is_it,
+    }
+    
+    return render(request, "encoding_error.html", context)
+
+@login_required(login_url='/login/')
+def change_encoding_status(request):
+    if request.method == "POST":
+        request_id = request.POST.get("request_id")
+        new_status = request.POST.get("status")
+
+        encoding_request = get_object_or_404(EncodingErrorRequest, id=request_id)
+        encoding_request.status = new_status
+
+        # If IT marks as Completed → set corrected_by & corrected_date
+        if new_status == "Completed" and request.user.groups.filter(name="IT").exists():
+            encoding_request.corrected_by = request.user   # save the actual User instance
+            encoding_request.corrected_date = timezone.now().date()  # just date since it's DateField
+
+            # Also set verified_date to match corrected_date
+            encoding_request.verified_date = encoding_request.corrected_date
+
+        encoding_request.save()
+        messages.success(request, f"Request status updated to {new_status}.")
+        return redirect("encoding_error")
+
+@login_required(login_url='/login/')
+def edit_encoding_error(request):
+    if request.method == "POST":
+        request_id = request.POST.get("request_id")
+        try:
+            encoding_request = EncodingErrorRequest.objects.get(id=request_id)
+        except EncodingErrorRequest.DoesNotExist:
+            messages.error(request, "Request not found.")
+            return redirect("encoding_error")
+
+        # Update fields
+        encoding_request.date = request.POST.get("date")
+        encoding_request.time = request.POST.get("time")
+        encoding_request.area_section = request.POST.get("area_section")
+        encoding_request.hospital_no = request.POST.get("hospital_no")
+        encoding_request.patient_name = request.POST.get("patient_name")
+        encoding_request.encoding_error_details = request.POST.get("encoding_error_details")
+        encoding_request.correct_data_details = request.POST.get("correct_data_details")
+        encoding_request.encoded_by = request.POST.get("encoded_by")
+        encoding_request.encoded_date = request.POST.get("encoded_date") or None
+
+        encoding_request.noted_by = request.POST.get("noted_by")
+        encoding_request.noted_date = request.POST.get("noted_date") or None
+
+        encoding_request.save()
+
+        messages.success(request, "Encoding Error Request updated successfully!")
+        return redirect("encoding_error")
+
+# printing encoding error request
+@login_required(login_url='/login/')
+def print_encoding_error(request, pk):
+    try:
+        er = EncodingErrorRequest.objects.get(pk=pk)
+    except EncodingErrorRequest.DoesNotExist:
+        raise Http404("Encoding error request not found")
+
+    # Path to your Encoding Error PDF template
+    template_path = os.path.join(settings.BASE_DIR, "Inventory_System/static/forms/FM-IT-005 Encoding Error.pdf")
+
+    # Create a buffer for the overlay
+    packet = io.BytesIO()
+    can = canvas.Canvas(packet, pagesize=letter)
+
+    # --- Fill in text fields ---
+    can.setFont("Helvetica", 10)
+
+    # Adjust coordinates to match your FM-IT-005 layout
+    # (you will need to test-print and tweak these values)
+    can.drawString(65, 580, er.date.strftime("%m    %d    %Y") if er.date else "")
+    can.drawString(183, 580, er.time.strftime("%I:%M %p") if er.time else "")
+    can.drawString(334, 580, er.area_section or "")
+    can.drawString(95, 549, er.hospital_no or "")
+    can.drawString(115, 536, er.patient_name or "")
+
+    # Error details (wrapped text)
+    def draw_wrapped_text(can, text, x, y, max_width, font_name="Helvetica", font_size=10, line_height=12, spacing_multiplier=1.0):
+        can.setFont(font_name, font_size)
+        words = text.split()
+        lines, current_line = [], ""
+        for word in words:
+            test_line = current_line + (" " if current_line else "") + word
+            if can.stringWidth(test_line, font_name, font_size) <= max_width:
+                current_line = test_line
+            else:
+                lines.append(current_line)
+                current_line = word
+        if current_line:
+            lines.append(current_line)
+        spacing = line_height * spacing_multiplier
+        for i, line in enumerate(lines):
+            can.drawString(x, y - (i * spacing), line)
+
+    draw_wrapped_text(can, er.encoding_error_details or "", 70, 495, max_width=450, spacing_multiplier=1.1)
+    draw_wrapped_text(can, er.correct_data_details or "", 70, 402, max_width=450, spacing_multiplier=1.1)
+
+    # Encoded by
+    can.drawString(95, 317, er.encoded_by or "")
+    can.drawString(277, 317, er.encoded_date.strftime("%m   %d   %Y") if er.encoded_date else "")
+
+    # Noted by
+    can.drawString(95, 269, er.noted_by or "")
+    can.drawString(279, 269, er.noted_date.strftime("%m   %d   %Y") if er.noted_date else "")
+
+    # Corrected by (IT)
+    corrected_name = er.corrected_by.get_full_name() if er.corrected_by else ""
+    corrected_date_str = er.corrected_date.strftime("%m   %d   %Y") if er.corrected_date else ""
+
+    can.drawString(95, 138, corrected_name)      # Adjust X, Y coordinates to fit your PDF layout
+    can.drawString(165, 200, corrected_date_str)
+
+    # Verified by (always Joselito, fixed)
+    can.drawString(362, 138, "Joselito Esteban A. Biscocho")
+
+    verified_date_str = er.verified_date.strftime("%m   %d   %Y") if er.verified_date else ""
+    can.drawString(462, 200, verified_date_str)  # Adjust coordinates to fit your template
+
+    # Save overlay
+    can.save()
+    packet.seek(0)
+
+    # Merge overlay with template PDF
+    overlay_pdf = PdfReader(packet)
+    existing_pdf = PdfReader(open(template_path, "rb"))
+    output = PdfWriter()
+
+    page = existing_pdf.pages[0]
+    page.merge_page(overlay_pdf.pages[0])
+    output.add_page(page)
+
+    # Create final PDF in memory
+    result_stream = io.BytesIO()
+    output.write(result_stream)
+    result_stream.seek(0)
+
+    # Return the PDF
+    return FileResponse(result_stream, as_attachment=False, filename=f"EncodingError_{er.id}.pdf")

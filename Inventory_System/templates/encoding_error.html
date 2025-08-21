@@ -1,0 +1,450 @@
+{% extends "home.html" %} {% block content %} {% load static %}
+
+<link rel="stylesheet" href="{% static 'css/paginator.css' %}">
+
+<div class="container mt-4">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+        <h2>
+            {% if is_it %}
+                Encoding Error Requests
+            {% else %}
+                My Correction Requests
+            {% endif %}
+        </h2>
+
+        {% if not is_it %}
+            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addCorrectionModal">
+                <i class="fas fa-plus"></i> Correction Request
+            </button>
+        {% endif %}
+    </div>
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>No.</th>
+                <th>Date & Time</th>
+                <th>Area/Section</th>
+                <th>Hospital Number</th>
+                <th>Name of Patient</th>
+                <th>Encoding Error Details</th>
+                <th>Encoded By</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for request in encoding_requests %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ request.date }} {{ request.time }}</td>
+                <td>{{ request.area_section }}</td>
+                <td>{{ request.hospital_no }}</td>
+                <td>{{ request.patient_name }}</td>
+                <td>{{ request.encoding_error_details|truncatechars:40 }}</td>
+                <td>{{ request.encoded_by }}</td>
+                <td>
+                    {% if request.status == "Pending" %}
+                        <span class="badge bg-warning text-dark">{{ request.status }}</span>
+                    {% elif request.status == "In Progress" %}
+                        <span class="badge bg-primary">{{ request.status }}</span>
+                    {% elif request.status == "Completed" %}
+                        <span class="badge bg-success">{{ request.status }}</span>
+                    {% elif request.status == "Cancelled" %}
+                        <span class="badge bg-danger">{{ request.status }}</span>
+                    {% else %}
+                        <span class="badge bg-secondary">{{ request.status }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="dropdown">
+                        <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"></button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item text-primary" href="#" data-bs-toggle="modal" data-bs-target="#viewRequestModal{{ request.id }}"><i class="fas fa-eye"></i> View</a></li>
+                            {% if not is_it and request.status != "Completed" and request.status != "Cancelled" %}
+                                <li>
+                                    <a class="dropdown-item text-info" href="#" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#editCorrectionModal"
+                                        data-id="{{ request.id }}"
+                                        data-date="{{ request.date|date:'Y-m-d' }}"
+                                        data-time="{{ request.time|time:'H:i' }}"
+                                        data-area_section="{{ request.area_section }}"
+                                        data-hospital_no="{{ request.hospital_no }}"
+                                        data-patient_name="{{ request.patient_name }}"
+                                        data-error_details="{{ request.encoding_error_details }}"
+                                        data-correct_details="{{ request.correct_data_details }}"
+                                        data-encoded_by="{{ request.encoded_by }}"
+                                        data-encoded_date="{{ request.encoded_date|date:'Y-m-d' }}"
+                                        data-noted_by="{{ request.noted_by }}"
+                                        data-noted_date="{{ request.noted_date|date:'Y-m-d' }}">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                </li>
+                            {% endif %}
+                            {% if is_it and request.status != "Completed" and request.status != "Cancelled" %}
+                                <li>
+                                    <a class="dropdown-item text-success" href="#" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#changeStatusModal" 
+                                    data-id="{{ request.id }}"
+                                    data-status="{{ request.status }}">
+                                    <i class="fas fa-exchange-alt"></i> Change Status
+                                    </a>
+                                </li>
+                            {% endif %}
+                            {% if request.user == request.requestor and request.status != "Completed" and request.status != "Cancelled" %}
+                                <li>
+                                    <form method="post" action="{% url 'change_encoding_status' %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="request_id" value="{{ request.id }}">
+                                        <input type="hidden" name="status" value="Cancelled">
+                                        <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Are you sure you want to cancel this request?');">
+                                            <i class="fas fa-times"></i> Cancel Request
+                                        </button>
+                                    </form>
+                                </li>
+                            {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center">No requests found</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- this is for the pages -->
+<div class="pagination">
+    <!-- First and Previous Buttons -->
+    {% if page_obj.has_previous %}
+    <a href="?page=1">&laquo;</a>
+    <a href="?page={{ page_obj.previous_page_number }}" class="btn">Previous</a> {% else %}
+    <a class="disabled">&laquo;</a>
+    <a class="btn disabled">Previous</a> {% endif %}
+
+    <!-- Page Numbers -->
+    {% for num in page_obj.paginator.page_range %} {% if num == page_obj.number %}
+    <a href="#" class="active">{{ num }}</a> {% else %}
+    <a href="?page={{ num }}">{{ num }}</a> {% endif %} {% endfor %}
+
+    <!-- Next and Last Buttons -->
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}" class="btn">Next</a>
+    <a href="?page={{ page_obj.paginator.num_pages }}">&raquo;</a> {% else %}
+    <a class="btn disabled">Next</a>
+    <a class="disabled">&raquo;</a> {% endif %}
+</div>
+    
+
+<!-- Modal -->
+<div class="modal fade" id="addCorrectionModal" tabindex="-1" aria-labelledby="addCorrectionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="post" action="{% url 'encoding_error' %}">
+                {% csrf_token %}
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="addCorrectionModalLabel">Add Encoding Error Request</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Date</label>
+                            <input type="date" name="date" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Time</label>
+                            <input type="time" name="time" class="form-control" required>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Area/Section</label>
+                            <input type="text" name="area_section" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Hospital Number</label>
+                            <input type="text" name="hospital_no" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Patient Name</label>
+                            <input type="text" name="patient_name" class="form-control" required>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Encoding Error Details</label>
+                            <textarea name="encoding_error_details" class="form-control" rows="3" required></textarea>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Correct Data Details</label>
+                            <textarea name="correct_data_details" class="form-control" rows="3" required></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Encoded By</label>
+                            <input type="text" name="encoded_by" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Encoded Date</label>
+                            <input type="date" name="encoded_date" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Noted By</label>
+                            <input type="text" name="noted_by" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Noted Date</label>
+                            <input type="date" name="noted_date" class="form-control">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Save Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+{% for request in encoding_requests %}
+    <div class="modal fade" id="viewRequestModal{{ request.id }}" tabindex="-1" aria-labelledby="viewRequestModalLabel{{ request.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="viewRequestModalLabel{{ request.id }}">
+                        Encoding Error Request Details
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <table class="table table-bordered">
+                        <tbody>
+                            <tr>
+                                <th>Date</th>
+                                <td>{{ request.date }}</td>
+                                <th>Time</th>
+                                <td>{{ request.time }}</td>
+                            </tr>
+                            <tr>
+                                <th>Area/Section</th>
+                                <td colspan="3">{{ request.area_section }}</td>
+                            </tr>
+                            <tr>
+                                <th>Hospital Number</th>
+                                <td>{{ request.hospital_no }}</td>
+                                <th>Patient Name</th>
+                                <td>{{ request.patient_name }}</td>
+                            </tr>
+                            <tr>
+                                <th>Encoding Error Details</th>
+                                <td colspan="3">{{ request.encoding_error_details }}</td>
+                            </tr>
+                            <tr>
+                                <th>Correct Data Details</th>
+                                <td colspan="3">{{ request.correct_data_details }}</td>
+                            </tr>
+                            <tr>
+                                <th>Encoded By</th>
+                                <td>{{ request.encoded_by }}</td>
+                                <th>Encoded Date</th>
+                                <td>{{ request.encoded_date|default:"-" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Noted By</th>
+                                <td>{{ request.noted_by|default:"-" }}</td>
+                                <th>Noted Date</th>
+                                <td>{{ request.noted_date|default:"-" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Corrected By (IT)</th>
+                                <td>
+                                    {% if request.corrected_by %}
+                                        {{ request.corrected_by.get_full_name|default:request.corrected_by.username }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <th>Corrected Date</th>
+                                <td>{{ request.corrected_date|default:"-" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Verified By</th>
+                                <td>{{ request.verified_by|default:"-" }}</td>
+                                <th>Verified Date</th>
+                                <td>{{ request.verified_date|default:"-" }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="modal-footer">
+                    {% if request.status != "Cancelled" %}
+                        <a id="print-button-{{ request.id }}" 
+                            href="{% url 'print_encoding_error' request.id %}" 
+                            class="btn btn-success text-white" target="_blank">
+                            <i class="bi bi-printer"></i> Print Encoding Error
+                        </a>
+                    {% endif %}
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endfor %}
+
+<!-- Change Status Modal -->
+<div class="modal fade" id="changeStatusModal" tabindex="-1" aria-labelledby="changeStatusModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'change_encoding_status' %}">
+                {% csrf_token %}
+                <input type="hidden" name="request_id" id="statusRequestId">
+
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="changeStatusModalLabel">Change Request Status</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <label class="form-label">Select Status</label>
+                    <select name="status" class="form-select" required>
+                        <option value="Pending">Pending</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Cancelled">Cancelled</option>
+                    </select>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success text-white">Save</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const changeStatusModal = document.getElementById("changeStatusModal");
+        changeStatusModal.addEventListener("show.bs.modal", function(event) {
+            const button = event.relatedTarget;
+            const requestId = button.getAttribute("data-id");
+            const currentStatus = button.getAttribute("data-status");
+
+            document.getElementById("statusRequestId").value = requestId;
+
+            // Pre-select current status in dropdown
+            const select = changeStatusModal.querySelector("select[name='status']");
+            if (currentStatus) {
+                select.value = currentStatus;
+            }
+        });
+    });
+</script>
+
+
+<div class="modal fade" id="editCorrectionModal" tabindex="-1" aria-labelledby="editCorrectionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="post" action="{% url 'edit_encoding_error' %}">
+                {% csrf_token %}
+                <input type="hidden" name="request_id" id="edit-request-id">
+
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="editCorrectionModalLabel">Edit Encoding Error Request</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Date</label>
+                            <input type="date" name="date" id="edit-date" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Time</label>
+                            <input type="time" name="time" id="edit-time" class="form-control" required>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Area/Section</label>
+                            <input type="text" name="area_section" id="edit-area-section" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Hospital Number</label>
+                            <input type="text" name="hospital_no" id="edit-hospital-no" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Patient Name</label>
+                            <input type="text" name="patient_name" id="edit-patient-name" class="form-control" required>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Encoding Error Details</label>
+                            <textarea name="encoding_error_details" id="edit-error-details" class="form-control" rows="3" required></textarea>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Correct Data Details</label>
+                            <textarea name="correct_data_details" id="edit-correct-details" class="form-control" rows="3" required></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Encoded By</label>
+                            <input type="text" name="encoded_by" id="edit-encoded-by" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Encoded Date</label>
+                            <input type="date" name="encoded_date" id="edit-encoded-date" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Noted By</label>
+                            <input type="text" name="noted_by" id="edit_noted_by" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Noted Date</label>
+                            <input type="date" name="noted_date" id="edit_noted_date" class="form-control">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success text-white">Update Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const editModal = document.getElementById('editCorrectionModal');
+            editModal.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+
+                document.getElementById('edit-request-id').value = button.getAttribute('data-id');
+                document.getElementById('edit-date').value = button.getAttribute('data-date');
+                document.getElementById('edit-time').value = button.getAttribute('data-time');
+                document.getElementById('edit-area-section').value = button.getAttribute('data-area_section');
+                document.getElementById('edit-hospital-no').value = button.getAttribute('data-hospital_no');
+                document.getElementById('edit-patient-name').value = button.getAttribute('data-patient_name');
+                document.getElementById('edit-error-details').value = button.getAttribute('data-error_details');
+                document.getElementById('edit-correct-details').value = button.getAttribute('data-correct_details');
+                document.getElementById('edit-encoded-by').value = button.getAttribute('data-encoded_by');
+                document.getElementById('edit-encoded-date').value = button.getAttribute('data-encoded_date');
+                document.getElementById('edit_noted_by').value = button.getAttribute('data-noted_by') || "";
+                document.getElementById('edit_noted_date').value = button.getAttribute('data-noted_date') || "";
+        });
+    });
+</script>
+
+
+
+
+
+
+
+{% endblock %}

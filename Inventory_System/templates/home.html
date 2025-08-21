@@ -45,7 +45,7 @@
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="profileDropdown" role="button" data-bs-toggle="dropdown">
                                 <img src="{% static 'img/office-man.png' %}" class="profile-img me-2" alt="Profile">
-                                <span>{{ display_name }}</span>
+                                <span>{{ user.get_full_name|default:user.username }}</span>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <!-- <li><a class="dropdown-item" href="#">Profile</a></li> -->
@@ -124,7 +124,7 @@
                             </a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" href="{% url 'service_request' %}">Service Request</a></li>
-                                <li><a class="dropdown-item" href="#">Error Encoding (iHOMIS/iHOMIS+)</a></li>
+                                <li><a class="dropdown-item" href="{% url 'encoding_error' %}">Error Encoding (iHOMIS/iHOMIS+)</a></li>
                                 <!-- <li><a class="dropdown-item" href="#">Schedule & Track Repairs</a></li> -->
                             </ul>
                         </li>
@@ -134,7 +134,7 @@
                         {% if 'reports_audits' in request.session.user_permissions or request.user.is_superuser %}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle fw-bold" href="#" id="payrollDropdown" role="button" data-bs-toggle="dropdown">
-                                <i class="bi bi-bar-chart"></i> Reports & Audits
+                                <i class="bi bi-bar-chart"></i> Reports
                             </a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" href="#">Generate Reports</a></li>
