@@ -33,4 +33,6 @@ urlpatterns = [
     path("encoding-error/change-status/", views.change_encoding_status, name="change_encoding_status"),
     path("encoding-error/edit/", views.edit_encoding_error, name="edit_encoding_error"),
     path("encoding-error/print/<int:pk>/", views.print_encoding_error, name="print_encoding_error"),
+    path('notifications/mark-read/<int:notification_id>/', views.mark_notification_read, name='mark_notification_read'),
+
 ]

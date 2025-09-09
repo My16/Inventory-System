@@ -2,6 +2,7 @@
 
 <link rel="stylesheet" href="{% static 'css/paginator.css' %}">
 <link rel="stylesheet" href="{% static 'css/service_request.css' %}">
+
 <div class="container mt-4">
     <!-- Add Office Button -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
@@ -39,16 +40,13 @@
         </thead>
         <tbody>
             {% for request in page_obj %}
-            <tr 
-                {% if request.assigned_to == user and request.status == "Pending" %}
-                    class="table-warning"
-                {% elif request.assigned_to == user and request.status == "In Progress" %}
-                    class="table-primary"
-                {% elif request.assigned_to == user and request.status == "Completed" %}
-                    class="table-success"
-                {% elif request.assigned_to == user and request.status == "Cancelled" %}
-                    class="table-danger"
-                {% endif %}>
+            <tr id="row-{{ request.id }}"
+                class="{% if request.assigned_to == user and request.status == 'Pending' %}table-warning{% endif %}
+                    {% if request.assigned_to == user and request.status == 'In Progress' %} table-primary{% endif %}
+                    {% if request.assigned_to == user and request.status == 'Completed' %} table-success{% endif %}
+                    {% if request.assigned_to == user and request.status == 'Cancelled' %} table-danger{% endif %}
+                    {% if highlight_id|stringformat:'s' == request.id|stringformat:'s' %} highlight{% endif %}
+                ">
                 <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
                 <td>{{ request.submission_date|date:"m/d/Y h:i A" }}</td>
                 <td><strong>{{ request.service_category.name }}</strong></td>
@@ -352,6 +350,7 @@
     </div>
 </div>
 
+<script src="{% static 'js/service_request.js' %}"></script>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>

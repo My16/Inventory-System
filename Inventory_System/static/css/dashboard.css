@@ -88,6 +88,14 @@ footer {
     width: auto;  /* Maintain aspect ratio */
 }
 
+/* Fix notification dropdown on hover so it doesn't overflow right */
+#notifDropdown + .dropdown-menu {
+    right: 0 !important;
+    left: auto !important;
+    transform: none !important; /* remove any weird shifts */
+}
+
+
 .profile-img {
     width: 30px;  /* Adjust width */
     height: 30px; /* Adjust height */
@@ -139,3 +147,11 @@ footer {
     z-index: 1030; /* Make sure it stays above page content */
 }
 
+/* Highlight in dropdown */
+.notif-highlight {
+    background-color: #d4f8d4; /* light green */
+    transition: background-color 0.4s ease;
+}
+.dropdown-item.clicked {
+    background-color: transparent;
+}

@@ -1,0 +1,19 @@
+/* Highlight in dropdown */
+.notif-highlight {
+    background-color: #d4f8d4; /* light green */
+    transition: background-color 0.4s ease;
+}
+.dropdown-item.clicked {
+    background-color: transparent;
+}
+
+/* Service Request row zoom + highlight */
+.row-zoom-highlight {
+    animation: zoomRow 0.4s ease;
+    background-color: #d4f8d4; /* same light green */
+}
+@keyframes zoomRow {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.03); }
+    100% { transform: scale(1); }
+}

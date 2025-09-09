@@ -30,8 +30,10 @@ from django.http import FileResponse, Http404
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from PyPDF2 import PdfReader, PdfWriter
-from .models import UserProfile, EncodingErrorRequest
+from .models import UserProfile, EncodingErrorRequest, Notification
 from datetime import timedelta
+from django.urls import reverse
+from math import ceil
 
 # Create your views here.
 def loginPage(request):
@@ -412,6 +414,13 @@ def service_request(request):
     status_choices = ServiceRequest.STATUS_CHOICES
     is_it = request.user.groups.filter(name='IT').exists()
 
+    # 👇 Only users in IT group
+    try:
+        it_group = Group.objects.get(name="IT")
+        it_users = it_group.user_set.all()
+    except Group.DoesNotExist:
+        it_users = []
+
     if request.method == "POST":
         service_category_id = request.POST.get("service_category")
         description = request.POST.get("description")
@@ -432,7 +441,7 @@ def service_request(request):
                 return redirect("service_request")
 
 
-            ServiceRequest.objects.create(
+            new_request = ServiceRequest.objects.create(
                 service_category=category,
                 office=office,
                 description=description,
@@ -446,7 +455,32 @@ def service_request(request):
         except (ServiceCategory.DoesNotExist, User.DoesNotExist):
             pass  # You may log this or handle it more gracefully
 
+        # 🔔 Notify all IT users
+        if new_request:
+            # ✅ Figure out which page this request will appear on
+            requests = ServiceRequest.objects.all().order_by('-submission_date')
+            request_list = list(requests)
+            index = request_list.index(new_request)
+            page_number = ceil((index + 1) / 10)  # 10 per page, adjust if you change paginator
+
+            # 1️⃣ Notify the assigned IT user first
+            Notification.objects.create(
+                recipient=assigned_to_user,
+                message=f"You have been assigned a new request from {user.get_full_name() or user.username}",
+                url=reverse("service_request") + f"?page={page_number}#row-{new_request.id}"
+            )
+
+            # 2️⃣ Notify the rest of the IT users
+            for it_user in it_users.exclude(id=assigned_to_user.id):
+                Notification.objects.create(
+                    recipient=it_user,
+                    message=f"New request submitted by {user.get_full_name() or user.username}",
+                    url=reverse("service_request") + f"?page={page_number}#row-{new_request.id}"
+                )
+
+
         return redirect('service_request')  # Redirect to avoid resubmission
+    
     
     # Fetch service requests
     if user.groups.filter(name="IT").exists():
@@ -462,12 +496,7 @@ def service_request(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # 👇 Only users in IT group
-    try:
-        it_group = Group.objects.get(name="IT")
-        it_users = it_group.user_set.all()
-    except Group.DoesNotExist:
-        it_users = []
+    notifications = Notification.objects.filter(recipient=user, is_read=False)[:5]
 
     context = {
         "display_name": display_name,
@@ -477,9 +506,21 @@ def service_request(request):
         "users": it_users,  # 👈 Add this to pass IT users to template
         "status_choices": ServiceRequest.STATUS_CHOICES,
         'is_it': is_it,
+        "notifications": notifications,
     }
 
     return render(request, 'service_request.html', context)
+
+@login_required
+def mark_notification_read(request, notification_id):
+    try:
+        notif = Notification.objects.get(id=notification_id, recipient=request.user)
+        notif.is_read = True
+        notif.save()
+        return JsonResponse({"success": True})
+    except Notification.DoesNotExist:
+        return JsonResponse({"success": False})
+    
 
 @require_POST
 @login_required
