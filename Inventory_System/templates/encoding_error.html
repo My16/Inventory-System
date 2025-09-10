@@ -35,7 +35,7 @@
         </thead>
         <tbody>
             {% for request in encoding_requests %}
-            <tr>
+            <tr id="row-{{ request.id }}">
                 <td>{{ forloop.counter }}</td>
                 <td>{{ request.date }} {{ request.time }}</td>
                 <td>{{ request.area_section }}</td>
@@ -419,6 +419,21 @@
     </div>
 </div>
 
+<style>
+    /* Encoding Error row zoom + highlight */
+    .row-zoom-highlight {
+        animation: zoomRow 0.4s ease;
+        background-color: #d4f8d4; /* same light green */
+    }
+    @keyframes zoomRow {
+        0%   { transform: scale(1); }
+        50%  { transform: scale(1.03); }
+        100% { transform: scale(1); }
+    }
+</style>
+
+
+
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const editModal = document.getElementById('editCorrectionModal');
@@ -441,8 +456,66 @@
     });
 </script>
 
+<script>
+    function highlightRow(rowId) {
+        const row = document.querySelector(`#row-${rowId}`);
+        if (row) {
+            row.classList.add("row-zoom-highlight");
+            row.scrollIntoView({ behavior: "smooth", block: "center" });
 
+            // 🔄 Remove the highlight after animation so it can retrigger later
+            setTimeout(() => row.classList.remove("row-zoom-highlight"), 800);
+        }
+    }
 
+    document.addEventListener("DOMContentLoaded", function () {
+        const notifLinks = document.querySelectorAll(".dropdown-item[data-notif-id]");
+        const badge = document.querySelector("#notifDropdown .badge");
+
+        notifLinks.forEach((link) => {
+            if (!link.classList.contains("clicked")) {
+                link.classList.add("notif-highlight");
+            }
+
+            link.addEventListener("click", function (event) {
+                event.preventDefault();
+
+                const notifId = this.dataset.notifId;
+
+                fetch(`/notifications/mark-read/${notifId}/`)
+                    .then((res) => res.json())
+                    .then((data) => {
+                        if (data.success) {
+                            let count = parseInt(badge?.textContent) || 0;
+                            count = Math.max(count - 1, 0);
+                            if (badge) {
+                                badge.textContent = count;
+                                if (count === 0) badge.style.display = "none";
+                            }
+
+                            this.classList.remove("notif-highlight");
+                            this.classList.add("clicked");
+                        }
+                    })
+                    .catch(() => console.warn("Failed to mark notification as read"))
+                    .finally(() => {
+                        const target = new URL(this.href);
+                        const current = new URL(window.location.href);
+
+                        if (target.pathname === current.pathname) {
+                            // ✅ Already on encoding_error page
+                            const rowId = target.hash.replace("#row-", "");
+                            highlightRow(rowId);
+                            history.pushState(null, "", this.href); // update URL without reload
+                        } else {
+                            // 🔄 Navigate if it’s a different page
+                            window.location.href = this.href;
+                        }
+                    });
+            });
+        });
+    });
+</script>
 
 
 

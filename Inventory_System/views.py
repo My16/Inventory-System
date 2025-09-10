@@ -695,7 +695,7 @@ def encoding_error(request):
         status = request.POST.get("status", "Pending")
 
         # Save to database
-        EncodingErrorRequest.objects.create(
+        request_obj = EncodingErrorRequest.objects.create(
             date=date,
             time=time,
             area_section=area_section,
@@ -715,8 +715,25 @@ def encoding_error(request):
             status=status,
         )
 
+        # ✅ Figure out the page for highlight/scroll animation
+        requests = EncodingErrorRequest.objects.all().order_by("-created_at")
+        request_list = list(requests)
+        index = request_list.index(request_obj)
+        page_number = ceil((index + 1) / 10)  # 10 per page
+
+        url = reverse("encoding_error") + f"?page={page_number}#row-{request_obj.id}"
+
+        # 🔔 Notify all IT members
+        it_group = Group.objects.get(name="IT")
+        for it_user in it_group.user_set.all():
+            Notification.objects.create(
+                recipient=it_user,
+                message=f"New Encoding Error request submitted by {user.username} (Patient: {patient_name})",
+                url=url,
+            )
+
         messages.success(request, "Encoding Error Request added successfully!")
-        return redirect("encoding_error")  # redirect to same page after save
+        return redirect(url)
 
     # GET: show list with pagination
     encoding_list = EncodingErrorRequest.objects.all().order_by("-created_at")
