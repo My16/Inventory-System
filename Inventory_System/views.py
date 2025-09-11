@@ -79,6 +79,28 @@ def generate_distinct_colors(n):
         colors.append(f"rgba({int(rgb[0]*255)}, {int(rgb[1]*255)}, {int(rgb[2]*255)}, 0.7)")
     return colors
 
+
+@login_required
+def latest_notifications(request):
+    # Only unread notifications
+    unread_qs = Notification.objects.filter(recipient=request.user, is_read=False).order_by("-created_at")
+
+    data = [
+        {
+            "id": n.id,
+            "message": n.message,
+            "url": n.url,
+            "created_at": n.created_at.strftime("%Y-%m-%d %H:%M"),
+            "is_read": n.is_read,
+        }
+        for n in unread_qs
+    ]
+
+    return JsonResponse({
+        "notifications": data,
+        "unread_count": unread_qs.count(),
+    })
+
 @login_required(login_url='/login/')
 def homepage(request):
     user = request.user
@@ -516,7 +538,7 @@ def mark_notification_read(request, notification_id):
     try:
         notif = Notification.objects.get(id=notification_id, recipient=request.user)
         notif.is_read = True
-        notif.save()
+        notif.save(update_fields=["is_read"])  # ✅ make sure DB is updated
         return JsonResponse({"success": True})
     except Notification.DoesNotExist:
         return JsonResponse({"success": False})
