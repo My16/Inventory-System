@@ -30,10 +30,12 @@ from django.http import FileResponse, Http404
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from PyPDF2 import PdfReader, PdfWriter
-from .models import UserProfile, EncodingErrorRequest, Notification
+from .models import UserProfile, EncodingErrorRequest, Notification, WebsiteUploadRequest, WebsiteUploadAttachment
 from datetime import timedelta
 from django.urls import reverse
 from math import ceil
+from .forms import WebsiteUploadRequestForm
+
 
 # Create your views here.
 def loginPage(request):
@@ -910,3 +912,67 @@ def print_encoding_error(request, pk):
 
     # Return the PDF
     return FileResponse(result_stream, as_attachment=False, filename=f"EncodingError_{er.id}.pdf")
+
+
+@login_required
+def web_uploading(request):
+    requests = WebsiteUploadRequest.objects.all().order_by("-date")
+
+    if request.method == "POST":
+        form = WebsiteUploadRequestForm(request.POST)
+        files = request.FILES.getlist("file")  # get multiple uploaded files
+
+        if form.is_valid():
+            upload_request = form.save(commit=False)
+            upload_request.user = request.user
+            upload_request.save()
+
+            # Save each attachment
+            for f in files:
+                WebsiteUploadAttachment.objects.create(request=upload_request, file=f)
+
+            return redirect("web_uploading")
+    else:
+        form = WebsiteUploadRequestForm()
+
+    context = {
+        "is_it": request.user.groups.filter(name="IT").exists(),
+        "requests": requests,
+        "form": form,
+    }
+
+    return render(request, "web_uploading.html", context)
+
+@login_required
+def web_upload_detail(request, pk):
+    req = get_object_or_404(WebsiteUploadRequest, pk=pk)
+    return render(request, "web_upload_detail.html", {"req": req})
+
+@login_required
+def web_upload_edit(request, pk):
+    request_obj = get_object_or_404(WebsiteUploadRequest, pk=pk)
+
+    if request.method == 'POST':
+        form = WebsiteUploadRequestForm(request.POST, request.FILES, instance=request_obj)
+        if form.is_valid():
+            form.save()
+
+            # 1️⃣ Remove any attachments the user marked for deletion
+            remove_ids = request.POST.getlist('remove_files')
+            if remove_ids:
+                request_obj.attachments.filter(id__in=remove_ids).delete()
+
+            # 2️⃣ Save new uploaded attachments
+            for f in request.FILES.getlist('new_files'):
+                request_obj.attachments.create(file=f)
+
+            return redirect('web_uploading')  # back to list page
+    else:
+        # GET: just redirect back, since edit happens via modal
+        return redirect('web_uploading')
+
+@login_required
+def web_upload_delete(request, pk):
+    req = get_object_or_404(WebsiteUploadRequest, pk=pk)
+    req.delete()
+    return redirect("web_uploading")

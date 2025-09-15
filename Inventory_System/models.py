@@ -1,6 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from django.dispatch import receiver
+import os
+
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -132,3 +135,49 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.recipient.username} - {self.message}"
+    
+class WebsiteUploadRequest(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="website_uploads")
+    date = models.DateField(auto_now_add=True)
+    area_section = models.CharField(max_length=255)
+    details_of_request = models.TextField()
+    prepared_by = models.CharField(max_length=255)
+    prepared_date = models.DateField(blank=True, null=True)
+    received_by = models.CharField(max_length=255, blank=True, null=True)
+    received_date = models.DateField(blank=True, null=True)
+
+    def __str__(self):
+        return f"Website Upload Request by {self.user.username} on {self.date}"
+    
+class WebsiteUploadAttachment(models.Model):
+    request = models.ForeignKey(
+        WebsiteUploadRequest,
+        on_delete=models.CASCADE,
+        related_name="attachments"
+    )
+    file = models.FileField(upload_to="website_uploads/")
+
+    def __str__(self):
+        return f"Attachment for Request {self.request.id}"
+    
+# ✅ Delete file from filesystem when attachment is deleted
+@receiver(models.signals.post_delete, sender=WebsiteUploadAttachment)
+def auto_delete_file_on_delete(sender, instance, **kwargs):
+    """Deletes file from filesystem when an attachment is deleted."""
+    if instance.file and os.path.isfile(instance.file.path):
+        os.remove(instance.file.path)
+
+
+# ✅ Delete old file if replaced with a new one
+@receiver(models.signals.pre_save, sender=WebsiteUploadAttachment)
+def auto_delete_file_on_change(sender, instance, **kwargs):
+    """Deletes old file from filesystem when updating with a new one."""
+    if not instance.pk:
+        return  # skip if new object
+    try:
+        old_file = WebsiteUploadAttachment.objects.get(pk=instance.pk).file
+    except WebsiteUploadAttachment.DoesNotExist:
+        return
+    new_file = instance.file
+    if old_file and old_file != new_file and os.path.isfile(old_file.path):
+        os.remove(old_file.path)

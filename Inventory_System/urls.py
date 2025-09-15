@@ -3,6 +3,7 @@ from . import views
 from django.contrib.auth.views import LogoutView
 from django.conf import settings
 from django.contrib import messages
+from django.conf.urls.static import static
 
 class CustomLogoutView(LogoutView):
     def dispatch(self, request, *args, **kwargs):
@@ -35,5 +36,11 @@ urlpatterns = [
     path("encoding-error/print/<int:pk>/", views.print_encoding_error, name="print_encoding_error"),
     path('notifications/mark-read/<int:notification_id>/', views.mark_notification_read, name='mark_notification_read'),
     path("notifications/latest/", views.latest_notifications, name="latest_notifications"),
-
+    path("web-uploading/", views.web_uploading, name="web_uploading"),
+    path("web-upload/<int:pk>/", views.web_upload_detail, name="web_upload_detail"),
+    path("web-upload/<int:pk>/edit/", views.web_upload_edit, name="web_upload_edit"),
+    path("web-upload/<int:pk>/delete/", views.web_upload_delete, name="web_upload_delete"),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

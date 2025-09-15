@@ -1,0 +1,325 @@
+{% extends "home.html" %}
+{% block content %}
+{% load static %}
+{% load custom_filters %}
+
+<div class="container mt-4">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+        <h2>
+            
+
+            {% if is_it %}
+                Website Upload Requests
+            {% else %}
+                Website Request History
+            {% endif %}
+        </h2>
+        
+        {% if not is_it %}
+            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addwebsiteuploadrequestModal">
+                <i class="fas fa-plus"></i> Add Website Upload Request
+            </button>
+        {% endif %}
+    </div>
+
+   <table class="table table-bordered">
+        <thead class="table">
+            <tr>
+                <th>No.</th>
+                <th>Area/Section</th>
+                <th>Details</th>
+                <th>Attachments</th>
+                <th>Prepared By</th>
+                <th>Date</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for req in requests %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ req.area_section }}</td>
+                    <td>{{ req.details_of_request|truncatechars:50 }}</td>
+                    <td>
+                        {% if req.attachments.all %}
+                            {% for file in req.attachments.all %}
+                                {% with file.file|filetype as ftype %}
+                                    {% if ftype == "pdf" %}
+                                        <a href="{{ file.file.url }}" target="_blank" class="badge bg-danger text-white me-1">
+                                            <i class="bi bi-file-earmark-pdf"></i> {{ file.file|filename:15 }}
+                                        </a>
+                                    {% elif ftype == "image" %}
+                                        <a href="{{ file.file.url }}" target="_blank" class="badge bg-success text-white me-1">
+                                            <i class="bi bi-image"></i> {{ file.file|filename:15 }}
+                                        </a>
+                                    {% elif ftype == "video" %}
+                                        <a href="{{ file.file.url }}" target="_blank" class="badge bg-warning text-dark me-1">
+                                            <i class="bi bi-camera-video"></i> {{ file.file|filename:15 }}
+                                        </a>
+                                    {% elif ftype == "word" %}
+                                        <a href="{{ file.file.url }}" target="_blank" class="badge bg-primary text-white me-1">
+                                            <i class="bi bi-file-earmark-word"></i> {{ file.file|filename:15 }}
+                                        </a>
+                                    {% elif ftype == "excel" %}
+                                        <a href="{{ file.file.url }}" target="_blank" class="badge bg-success text-white me-1">
+                                            <i class="bi bi-file-earmark-excel"></i> {{ file.file|filename:15 }}
+                                        </a>
+                                    {% else %}
+                                        <a href="{{ file.file.url }}" target="_blank" class="badge bg-secondary text-white me-1">
+                                            <i class="bi bi-paperclip"></i> {{ file.file|filename:15 }}
+                                        </a>
+                                    {% endif %}
+                                {% endwith %}
+                            {% endfor %}
+                        {% else %}
+                            <span class="badge bg-secondary">No files</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ req.prepared_by }}</td>
+                    <td>{{ req.date }}</td>
+                    <td>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" id="actionMenu{{ req.id }}" data-bs-toggle="dropdown" aria-expanded="false"></button>
+                            <ul class="dropdown-menu" aria-labelledby="actionMenu{{ req.id }}">
+                                <li>
+                                    <a class="dropdown-item text-primary" href="#" data-bs-toggle="modal" data-bs-target="#viewRequestModal{{ req.id }}">
+                                        <i class="fas fa-eye"></i> View
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item text-info" href="#" data-bs-toggle="modal" data-bs-target="#editRequestModal{{ req.id }}">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item text-danger" href="{% url 'web_upload_delete' req.id %}" 
+                                    onclick="return confirm('Are you sure you want to delete this request?');">
+                                        <i class="fas fa-trash-can"></i> Delete
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center">No Website Upload Requests found.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+
+   <!-- Add Website Upload Request Modal -->
+<div class="modal fade" id="addwebsiteuploadrequestModal" tabindex="-1" aria-labelledby="addwebsiteuploadrequestModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+        
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="addwebsiteuploadrequestModalLabel">New Website Upload Request</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <form method="post" enctype="multipart/form-data" action="{% url 'web_uploading' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                
+                    <div class="mb-3">
+                        <label for="id_area_section" class="form-label">Area/Section</label>
+                        {{ form.area_section }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_details_of_request" class="form-label">Details of Request</label>
+                        {{ form.details_of_request }}
+                    </div>
+
+                    <!-- FIXED: Multiple file uploads -->
+                    <div class="mb-3">
+                        <label for="id_files" class="form-label">Attachments</label>
+                        <input type="file" name="file" id="id_files" class="form-control" multiple>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_prepared_by" class="form-label">Prepared By</label>
+                        {{ form.prepared_by }}
+                    </div>
+
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Submit Request</button>
+                </div>
+            </form>
+            
+        </div>
+    </div>
+</div>
+
+{% for req in requests %}
+    <!-- ModalView -->
+    <div class="modal fade" id="viewRequestModal{{ req.id }}" tabindex="-1" aria-labelledby="viewRequestModalLabel{{ req.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="viewRequestModalLabel{{ req.id }}">Website Upload Request No. {{ forloop.counter }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <table class="table table-bordered">
+                        <tr><th>Area/Section</th><td>{{ req.area_section }}</td></tr>
+                        <tr><th>Details</th><td>{{ req.details_of_request }}</td></tr>
+                        <tr><th>Prepared By</th><td>{{ req.prepared_by }}</td></tr>
+                        <tr><th>Date</th><td>{{ req.date }}</td></tr>
+                        <tr>
+                            <th>Attachments</th>
+                            <td>
+                                {% if req.attachments.all %}
+                                    <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                                        <table class="table table-sm table-bordered mb-0">
+                                            <thead class="table-light position-sticky top-0">
+                                                <tr>
+                                                    <th>File Name</th>
+                                                    <th>Type</th>
+                                                    <th>Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for file in req.attachments.all %}
+                                                {% with file.file|filetype as ftype %}
+                                                <tr>
+                                                    <td>{{ file.file|filename:40 }}</td>
+                                                    <td class="text-center">
+                                                        {% if ftype == "pdf" %}
+                                                            <span class="badge bg-danger text-white">PDF</span>
+                                                        {% elif ftype == "image" %}
+                                                            <span class="badge bg-success text-white">Image</span>
+                                                        {% elif ftype == "video" %}
+                                                            <span class="badge bg-warning text-dark">Video</span>
+                                                        {% elif ftype == "word" %}
+                                                            <span class="badge bg-primary text-white">Word</span>
+                                                        {% elif ftype == "excel" %}
+                                                            <span class="badge bg-success text-white">Excel</span>
+                                                        {% else %}
+                                                            <span class="badge bg-secondary text-white">Other</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <a href="{{ file.file.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                            <i class="bi bi-box-arrow-up-right"></i> View
+                                                        </a>
+                                                        <a href="{{ file.file.url }}" download class="btn btn-sm btn-outline-success">
+                                                            <i class="bi bi-download"></i> Download
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                                {% endwith %}
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                {% else %}
+                                    <span class="badge bg-secondary">No attachments</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endfor %}
+
+
+{% for req in requests %}
+    <!-- Edit Request Modal -->
+    <div class="modal fade" id="editRequestModal{{ req.id }}" tabindex="-1" aria-labelledby="editRequestModalLabel{{ req.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="editRequestModalLabel{{ req.id }}">Edit Website Upload Request #{{ forloop.counter }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <form method="post" enctype="multipart/form-data" action="{% url 'web_upload_edit' req.pk %}">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Area/Section</label>
+                            <input type="text" name="area_section" class="form-control" value="{{ req.area_section }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Details of Request</label>
+                            <textarea name="details_of_request" class="form-control">{{ req.details_of_request }}</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Attachments</label>
+                            <input type="file" name="new_files" class="form-control" multiple>
+
+                            {% if req.attachments.all %}
+                                <div class="table-responsive mt-2" style="max-height: 200px; overflow-y: auto;">
+                                    <table class="table table-sm table-bordered mb-0">
+                                        <thead class="table-light position-sticky top-0">
+                                            <tr>
+                                                <th>File Name</th>
+                                                <th>File Type</th>
+                                                <th>Remove</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for file in req.attachments.all %}
+                                                {% with file.file|filetype as ftype %}
+                                                <tr>
+                                                    <td>{{ file.file|filename:30 }}</td>
+                                                    <td class="text-center">
+                                                        {% if ftype == "pdf" %}
+                                                            <span class="badge bg-danger text-white">PDF</span>
+                                                        {% elif ftype == "image" %}
+                                                            <span class="badge bg-success text-white">Image</span>
+                                                        {% elif ftype == "video" %}
+                                                            <span class="badge bg-warning text-dark">Video</span>
+                                                        {% elif ftype == "word" %}
+                                                            <span class="badge bg-primary text-white">Word</span>
+                                                        {% elif ftype == "excel" %}
+                                                            <span class="badge bg-success text-white">Excel</span>
+                                                        {% else %}
+                                                            <span class="badge bg-secondary text-white">Other</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <input type="checkbox" name="remove_files" value="{{ file.id }}">
+                                                    </td>
+                                                </tr>
+                                                {% endwith %}
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Prepared By</label>
+                            <input type="text" name="prepared_by" class="form-control" value="{{ req.prepared_by }}">
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endfor %}
+
+
+
+{% endblock %}
+
