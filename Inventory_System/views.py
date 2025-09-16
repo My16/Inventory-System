@@ -519,6 +519,8 @@ def service_request(request):
     paginator = Paginator(service_requests, 10)  # Show 10 per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+    elided_page_range = paginator.get_elided_page_range(number=page_obj.number)
+
 
     notifications = Notification.objects.filter(recipient=user, is_read=False)[:5]
 
@@ -531,6 +533,7 @@ def service_request(request):
         "status_choices": ServiceRequest.STATUS_CHOICES,
         'is_it': is_it,
         "notifications": notifications,
+        "elided_page_range": elided_page_range,
     }
 
     return render(request, 'service_request.html', context)
@@ -753,7 +756,7 @@ def encoding_error(request):
             Notification.objects.create(
                 recipient=it_user,
                 message=f"New Encoding Error request submitted by {user.username} (Patient: {patient_name})",
-                url=url,
+                url=reverse("encoding_error") + f"?page={page_number}&from=notif#row-{request_obj.id}"
             )
 
         messages.success(request, "Encoding Error Request added successfully!")
@@ -916,29 +919,53 @@ def print_encoding_error(request, pk):
 
 @login_required
 def web_uploading(request):
-    requests = WebsiteUploadRequest.objects.all().order_by("-date")
+    requests_qs = WebsiteUploadRequest.objects.all().order_by("-date")
+
+    # Apply pagination (10 per page, you can change to 20/50 if needed)
+    paginator = Paginator(requests_qs, 10)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
 
     if request.method == "POST":
-        form = WebsiteUploadRequestForm(request.POST)
-        files = request.FILES.getlist("file")  # get multiple uploaded files
+        form = WebsiteUploadRequestForm(request.POST, request.FILES)
+        files = request.FILES.getlist("file")  # multiple uploads
 
         if form.is_valid():
             upload_request = form.save(commit=False)
             upload_request.user = request.user
             upload_request.save()
 
-            # Save each attachment
+            # Save attachments
             for f in files:
                 WebsiteUploadAttachment.objects.create(request=upload_request, file=f)
 
-            return redirect("web_uploading")
+            # ✅ Figure out which page the new request is on
+            all_requests = WebsiteUploadRequest.objects.all().order_by("-date")
+            request_list = list(all_requests)
+            index = request_list.index(upload_request)
+            page_number = ceil((index + 1) / 10)  # 10 per page
+
+            url = reverse("web_uploading") + f"?page={page_number}#row-{upload_request.id}"
+
+            # (Optional) You can also notify IT group here like encoding_error
+            # 🔔 Notify all IT users
+            it_users = Group.objects.get(name="IT").user_set.all()
+            for it_user in it_users:
+                Notification.objects.create(
+                    recipient=it_user,
+                    message=f"New Website Upload Request submitted by {request.user.get_full_name() or request.user.username}",
+                    url=reverse("web_uploading") + f"?page={page_number}&from=notif#row-{upload_request.id}"
+                )
+
+            return redirect(url)
     else:
         form = WebsiteUploadRequestForm()
 
     context = {
         "is_it": request.user.groups.filter(name="IT").exists(),
-        "requests": requests,
+        "requests": page_obj,
         "form": form,
+        "paginator": paginator,
     }
 
     return render(request, "web_uploading.html", context)

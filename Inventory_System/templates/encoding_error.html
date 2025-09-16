@@ -118,26 +118,40 @@
 </div>
 
 <!-- this is for the pages -->
+<!-- this is for the pages -->
 <div class="pagination">
     <!-- First and Previous Buttons -->
     {% if page_obj.has_previous %}
-    <a href="?page=1">&laquo;</a>
-    <a href="?page={{ page_obj.previous_page_number }}" class="btn">Previous</a> {% else %}
-    <a class="disabled">&laquo;</a>
-    <a class="btn disabled">Previous</a> {% endif %}
+        <a href="?page=1">&laquo;</a>
+        <a href="?page={{ page_obj.previous_page_number }}" class="btn">Previous</a>
+    {% else %}
+        <a class="disabled">&laquo;</a>
+        <a class="btn disabled">Previous</a>
+    {% endif %}
 
-    <!-- Page Numbers -->
-    {% for num in page_obj.paginator.page_range %} {% if num == page_obj.number %}
-    <a href="#" class="active">{{ num }}</a> {% else %}
-    <a href="?page={{ num }}">{{ num }}</a> {% endif %} {% endfor %}
+    <!-- Page Numbers with Ellipsis -->
+    {% for num in page_obj.paginator.page_range %}
+        {% if num == page_obj.number %}
+            <a href="#" class="active">{{ num }}</a>
+        {% elif num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+            <a href="?page={{ num }}">{{ num }}</a>
+        {% elif num == 1 or num == page_obj.paginator.num_pages %}
+            <a href="?page={{ num }}">{{ num }}</a>
+        {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
+            <span class="dots">…</span>
+        {% endif %}
+    {% endfor %}
 
     <!-- Next and Last Buttons -->
     {% if page_obj.has_next %}
-    <a href="?page={{ page_obj.next_page_number }}" class="btn">Next</a>
-    <a href="?page={{ page_obj.paginator.num_pages }}">&raquo;</a> {% else %}
-    <a class="btn disabled">Next</a>
-    <a class="disabled">&raquo;</a> {% endif %}
+        <a href="?page={{ page_obj.next_page_number }}" class="btn">Next</a>
+        <a href="?page={{ page_obj.paginator.num_pages }}">&raquo;</a>
+    {% else %}
+        <a class="btn disabled">Next</a>
+        <a class="disabled">&raquo;</a>
+    {% endif %}
 </div>
+
     
 
 <!-- Modal -->
@@ -456,188 +470,7 @@
     });
 </script>
 
-<script>
-    function highlightRow(rowId) {
-        const row = document.querySelector(`#row-${rowId}`);
-        if (row) {
-            row.classList.add("row-zoom-highlight");
-            row.scrollIntoView({ behavior: "smooth", block: "center" });
-
-            // 🔄 Remove the highlight after animation so it can retrigger later
-            setTimeout(() => row.classList.remove("row-zoom-highlight"), 800);
-        }
-    }
-
-    document.addEventListener("DOMContentLoaded", function () {
-        const notifLinks = document.querySelectorAll(".dropdown-item[data-notif-id]");
-        const badge = document.querySelector("#notifDropdown .badge");
-
-        notifLinks.forEach((link) => {
-            if (!link.classList.contains("clicked")) {
-                link.classList.add("notif-highlight");
-            }
-
-            link.addEventListener("click", function (event) {
-                event.preventDefault();
-
-                const notifId = this.dataset.notifId;
-
-                fetch(`/notifications/mark-read/${notifId}/`)
-                    .then((res) => res.json())
-                    .then((data) => {
-                        if (data.success) {
-                            let count = parseInt(badge?.textContent) || 0;
-                            count = Math.max(count - 1, 0);
-                            if (badge) {
-                                badge.textContent = count;
-                                if (count === 0) badge.style.display = "none";
-                            }
-
-                            this.classList.remove("notif-highlight");
-                            this.classList.add("clicked");
-                        }
-                    })
-                    .catch(() => console.warn("Failed to mark notification as read"))
-                    .finally(() => {
-                        const target = new URL(this.href);
-                        const current = new URL(window.location.href);
-
-                        if (target.pathname === current.pathname) {
-                            // ✅ Already on encoding_error page
-                            const rowId = target.hash.replace("#row-", "");
-                            highlightRow(rowId);
-                            history.pushState(null, "", this.href); // update URL without reload
-                        } else {
-                            // 🔄 Navigate if it’s a different page
-                            window.location.href = this.href;
-                        }
-                    });
-            });
-        });
-    });
-</script>
-
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const badge = document.querySelector("#notifBadge");
-        const dropdown = document.querySelector("#notifDropdown + .dropdown-menu");
-
-        if (!dropdown || !badge) return;
-
-        // 🔹 Get CSRF token from cookie
-        function getCSRFToken() {
-            let cookieValue = null;
-            const cookies = document.cookie.split(";");
-            for (let cookie of cookies) {
-                cookie = cookie.trim();
-                if (cookie.startsWith("csrftoken=")) {
-                    cookieValue = cookie.substring("csrftoken=".length);
-                    break;
-                }
-            }
-            return cookieValue;
-        }
-
-        // 🔹 Highlight table row by ID
-        function highlightRow(rowId) {
-            const row = document.querySelector(`#row-${rowId}`);
-            if (!row) return;
-
-            row.classList.add("row-zoom-highlight");
-            row.scrollIntoView({ behavior: "smooth", block: "center" });
-
-            setTimeout(() => row.classList.remove("row-zoom-highlight"), 800);
-        }
-
-        // 🔹 Build dropdown items
-        function renderNotifications(notifications) {
-            dropdown.innerHTML = "";
-
-            notifications.forEach((notif) => {
-                const item = document.createElement("a");
-                item.href = notif.url;
-                item.textContent = notif.message;
-                item.className = "dropdown-item";
-                item.dataset.notifId = notif.id;
-
-                if (!notif.is_read) {
-                    item.classList.add("notif-highlight");
-                }
-
-                dropdown.appendChild(item);
-            });
-        }
-
-        // 🔹 Fetch notifications from server
-        async function fetchNotifications() {
-            try {
-                const res = await fetch("/notifications/latest/");
-                const data = await res.json();
-
-                // Update badge
-                if (data.unread_count > 0) {
-                    badge.style.display = "inline-block";
-                    badge.textContent = data.unread_count;
-                } else {
-                    badge.style.display = "none";
-                }
-
-                renderNotifications(data.notifications);
-            } catch (err) {
-                console.warn("Failed to fetch notifications", err);
-            }
-        }
-
-        // 🔹 Event delegation for marking as read
-        dropdown.addEventListener("click", function(event) {
-            const link = event.target.closest(".dropdown-item[data-notif-id]");
-            if (!link) return;
-
-            event.preventDefault();
-            const notifId = link.dataset.notifId;
-
-            fetch(`/notifications/mark-read/${notifId}/`, {
-                method: "POST",
-                headers: {
-                    "X-CSRFToken": getCSRFToken(),
-                    "X-Requested-With": "XMLHttpRequest",
-                },
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        let count = parseInt(badge.textContent) || 0;
-                        count = Math.max(count - 1, 0);
-                        badge.textContent = count;
-                        if (count === 0) badge.style.display = "none";
-
-                        link.classList.remove("notif-highlight");
-                        link.classList.add("clicked");
-                    }
-                })
-                .finally(() => {
-                    const targetUrl = new URL(link.href);
-                    const currentUrl = new URL(window.location.href);
-
-                    if (targetUrl.pathname === currentUrl.pathname && targetUrl.hash.startsWith("#row-")) {
-                        const rowId = targetUrl.hash.replace("#row-", "");
-                        highlightRow(rowId);
-                        history.pushState(null, "", link.href); // update URL without reload
-                    } else {
-                        window.location.href = link.href;
-                    }
-                });
-        });
-
-        // 🔹 Initial fetch + polling every 10s
-        fetchNotifications();
-        setInterval(fetchNotifications, 10000);
-    });
-</script>
-
-
-
-
+<script src="{% static 'js/encoding_error_notif.js' %}"></script>
 
 
 {% endblock %}
