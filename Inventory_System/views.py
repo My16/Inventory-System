@@ -35,6 +35,8 @@ from datetime import timedelta
 from django.urls import reverse
 from math import ceil
 from .forms import WebsiteUploadRequestForm
+from django.db.models import Count, Value
+from django.db.models.functions import Concat
 
 
 # Create your views here.
@@ -110,82 +112,14 @@ def homepage(request):
     is_it = user.groups.filter(name='IT').exists()
     display_name = user.get_full_name() if user.get_full_name() else user.username
 
-    # Total number of service requests
-    total_requests = ServiceRequest.objects.count()
-
-    # Total number of service requests today
-    today = now().date()
-    total_requests_today = ServiceRequest.objects.filter(submission_date__date=today).count()
-
-    # Requests assigned to current IT user
-    assigned_to_user = ServiceRequest.objects.filter(assigned_to=user)
-    assigned_count = assigned_to_user.count()
-
-    # Completed requests by current IT user
-    completed_by_user = assigned_to_user.filter(status='Completed').count()
-
-    # Group by assigned IT personnel and date
-    completed_by_it_and_date = (
-        ServiceRequest.objects
-        .filter(status='Completed')
-        .annotate(date=TruncDate('submission_date'))
-        .values('assigned_to__username', 'date')
-        .annotate(count=Count('id'))
-        .order_by('date')
-    )
-
-    # Data for bar chart (total requests per office)
-    requests_per_office = (
-        ServiceRequest.objects
-        .values('office__abbreviation')
-        .annotate(total=Count('id'))
-        .order_by('-total')  # Optional: sort by most requests first
-    )
-
-    # Format data
-    chart_dict = defaultdict(lambda: defaultdict(int))
-    dates_set = set()
-
-    for entry in completed_by_it_and_date:
-        username = entry['assigned_to__username']
-        date = entry['date'].strftime('%Y-%m-%d')
-        chart_dict[username][date] = entry['count']
-        dates_set.add(date)
-
-    sorted_dates = sorted(list(dates_set))
-
-    line_chart_datasets = []
-    for username, counts in chart_dict.items():
-        data = [counts.get(date, 0) for date in sorted_dates]
-        line_chart_datasets.append({
-            'label': username,
-            'data': data,
-        })
-
-    # Format bar chart data
-    bar_chart_labels = [
-    entry['office__abbreviation'] or entry['office__office_name'][:3].upper() 
-    for entry in requests_per_office
-    ]
-    bar_chart_data = [entry['total'] for entry in requests_per_office]
-    bar_chart_colors = generate_distinct_colors(len(bar_chart_labels))
 
     context = {
-        'total_requests': total_requests,
-        'total_requests_today': total_requests_today,
-        'assigned_count': assigned_count,
-        'completed_by_user': completed_by_user,
         "display_name": display_name,
         "user_permissions": user_permissions,
-        'line_chart_labels': sorted_dates,
-        'line_chart_datasets': line_chart_datasets,
-        'bar_chart_labels': bar_chart_labels,
-        'bar_chart_data': bar_chart_data,
-        'bar_chart_colors': bar_chart_colors,
-        'is_it': is_it,
+        "is_it": is_it,
     }
 
-    return render(request, 'home.html', context)
+    return render(request, "home.html", context)
 
 @login_required(login_url='/login/')
 def add_office(request):
@@ -919,7 +853,7 @@ def print_encoding_error(request, pk):
 
 @login_required
 def web_uploading(request):
-    requests_qs = WebsiteUploadRequest.objects.all().order_by("-date")
+    requests_qs = WebsiteUploadRequest.objects.all().order_by("-date", "-id")
 
     # Apply pagination (10 per page, you can change to 20/50 if needed)
     paginator = Paginator(requests_qs, 10)
@@ -933,6 +867,11 @@ def web_uploading(request):
         if form.is_valid():
             upload_request = form.save(commit=False)
             upload_request.user = request.user
+
+            # If prepared_date is not manually entered, default to "date"
+            if not upload_request.prepared_date:
+                upload_request.prepared_date = upload_request.date  
+
             upload_request.save()
 
             # Save attachments
@@ -1003,3 +942,104 @@ def web_upload_delete(request, pk):
     req = get_object_or_404(WebsiteUploadRequest, pk=pk)
     req.delete()
     return redirect("web_uploading")
+
+
+@login_required
+def web_upload_receive(request, pk):
+    req = get_object_or_404(WebsiteUploadRequest, pk=pk)
+
+    # Only IT group can mark as received
+    if not request.user.groups.filter(name="IT").exists():
+        return redirect("web_uploading")
+
+    # Mark as received
+    req.received_by = request.user.get_full_name() or request.user.username
+    req.received_date = timezone.now()
+    req.save()
+
+    # Notify requester
+    Notification.objects.create(
+        recipient=req.user,
+        message = f"Your Latest Website Upload Request has been marked as received by {req.received_by}.",
+        url=reverse("web_uploading") + f"#row-{req.id}"
+    )
+
+    return redirect("web_uploading")
+
+@login_required(login_url='/login/')
+def print_web_upload_request(request, pk):
+    try:
+        req = WebsiteUploadRequest.objects.get(pk=pk)
+    except WebsiteUploadRequest.DoesNotExist:
+        raise Http404("Website Upload Request not found")
+
+    # Path to FM-IT-004 Web Upload PDF template
+    template_path = os.path.join(
+        settings.BASE_DIR,
+        "Inventory_System/static/forms/FM-IT-004 Web Upload.pdf"
+    )
+
+    # Create overlay
+    packet = io.BytesIO()
+    can = canvas.Canvas(packet, pagesize=letter)
+    can.setFont("Helvetica", 10)
+
+    # --- Helper function for wrapping long text ---
+    def draw_wrapped_text(can, text, x, y, max_width, font_name="Helvetica", font_size=10, line_height=12, spacing_multiplier=1.0):
+        can.setFont(font_name, font_size)
+        words = text.split()
+        lines, current_line = [], ""
+        for word in words:
+            test_line = current_line + (" " if current_line else "") + word
+            if can.stringWidth(test_line, font_name, font_size) <= max_width:
+                current_line = test_line
+            else:
+                lines.append(current_line)
+                current_line = word
+        if current_line:
+            lines.append(current_line)
+
+        spacing = line_height * spacing_multiplier
+        for i, line in enumerate(lines):
+            can.drawString(x, y - (i * spacing), line)
+
+
+    # --- Fill in request fields (adjust coordinates to match FM-IT-004 layout) ---
+
+    prepared_date = req.prepared_date or req.date
+    # this is for the Date Reqquested at top left
+    can.drawString(69, 543, prepared_date.strftime("%m   %d   %Y") if prepared_date else "")
+
+    can.drawString(325, 543, req.area_section or "")
+    draw_wrapped_text(can, req.details_of_request or "", 70, 497, max_width=480, spacing_multiplier=1.3)
+
+    if req.attachments.exists():   # works if you use a related_name="attachments"
+    # Adjust the coordinates (x, y) so the checkmark falls inside the box
+        can.drawString(83, 197, "✔")
+
+    can.drawString(102, 111, req.prepared_by or "")
+    # this is for the Date Prepared at lower left
+    can.drawString(216, 173, prepared_date.strftime("%m  %d  %Y") if prepared_date else "")
+
+    if req.received_by:
+        can.drawString(375, 111, req.received_by or "")
+        can.drawString(490, 173, req.received_date.strftime("%m  %d  %Y") if req.received_date else "")
+
+    # Save overlay
+    can.save()
+    packet.seek(0)
+
+    # Merge overlay with template
+    overlay_pdf = PdfReader(packet)
+    existing_pdf = PdfReader(open(template_path, "rb"))
+    output = PdfWriter()
+
+    page = existing_pdf.pages[0]
+    page.merge_page(overlay_pdf.pages[0])
+    output.add_page(page)
+
+    result_stream = io.BytesIO()
+    output.write(result_stream)
+    result_stream.seek(0)
+
+    return FileResponse(result_stream, as_attachment=False, filename=f"WebUpload_{req.id}.pdf")

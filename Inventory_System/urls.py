@@ -40,6 +40,8 @@ urlpatterns = [
     path("web-upload/<int:pk>/", views.web_upload_detail, name="web_upload_detail"),
     path("web-upload/<int:pk>/edit/", views.web_upload_edit, name="web_upload_edit"),
     path("web-upload/<int:pk>/delete/", views.web_upload_delete, name="web_upload_delete"),
+    path("web-upload/<int:pk>/receive/", views.web_upload_receive, name="web_upload_receive"),
+    path("print-web-upload/<int:pk>/", views.print_web_upload_request, name="print_web_upload_request"),
 ]
 
 if settings.DEBUG:

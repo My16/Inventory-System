@@ -138,13 +138,13 @@ class Notification(models.Model):
     
 class WebsiteUploadRequest(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="website_uploads")
-    date = models.DateField(auto_now_add=True)
+    date = models.DateTimeField(auto_now_add=True)
     area_section = models.CharField(max_length=255)
     details_of_request = models.TextField()
     prepared_by = models.CharField(max_length=255)
-    prepared_date = models.DateField(blank=True, null=True)
+    prepared_date = models.DateTimeField(blank=True, null=True)
     received_by = models.CharField(max_length=255, blank=True, null=True)
-    received_date = models.DateField(blank=True, null=True)
+    received_date = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
         return f"Website Upload Request by {self.user.username} on {self.date}"
