@@ -155,3 +155,8 @@ footer {
 .dropdown-item.clicked {
     background-color: transparent;
 }
+.dropdown-header {
+    font-weight: bold;
+    font-size: 0.95rem; /* optional, to make it a bit bigger */
+    color: #333; /* darker text for better visibility */
+}

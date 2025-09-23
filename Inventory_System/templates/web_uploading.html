@@ -206,6 +206,12 @@
                     <div class="mb-3">
                         <label for="id_files" class="form-label">Attachments</label>
                         <input type="file" name="file" id="id_files" class="form-control" multiple>
+
+                        <!-- Progress bar -->
+                        <div class="progress mt-2" style="height: 20px;">
+                            <div id="uploadProgress" class="progress-bar progress-bar-striped progress-bar-animated"
+                                role="progressbar" style="width: 0%">0%</div>
+                        </div>
                     </div>
 
                     <div class="mb-3">
@@ -425,6 +431,49 @@
 </style>
 
 <script src="{% static 'js/web_upload_notif.js' %}"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const form = document.querySelector("#addwebsiteuploadrequestModal form");
+        const progressBar = document.getElementById("uploadProgress");
+
+        form.addEventListener("submit", function (e) {
+            e.preventDefault();  // prevent normal submit
+
+            let url = form.action;
+            let formData = new FormData(form);
+
+            let xhr = new XMLHttpRequest();
+            xhr.open("POST", url, true);
+
+            // update progress bar
+            xhr.upload.onprogress = function (event) {
+                if (event.lengthComputable) {
+                    let percent = Math.round((event.loaded / event.total) * 100);
+                    progressBar.style.width = percent + "%";
+                    progressBar.textContent = percent + "%";
+                }
+            };
+
+            // when done
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    progressBar.classList.remove("progress-bar-animated");
+                    progressBar.classList.add("bg-success");
+                    progressBar.textContent = "Upload complete!";
+                    // Optionally refresh page or close modal
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    progressBar.classList.add("bg-danger");
+                    progressBar.textContent = "Upload failed!";
+                }
+            };
+
+            xhr.send(formData);
+        });
+    });
+</script>
+
 
 
 

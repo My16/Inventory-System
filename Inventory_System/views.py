@@ -1,16 +1,14 @@
-from urllib import request
 from django.conf import settings
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from .models import Office, ServiceRequest, ServiceCategory
-from .forms import OfficeForm
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json, random, colorsys, io, os, unicodedata
 from django.shortcuts import get_object_or_404
-from django.utils.timezone import localtime
+from django.utils.timezone import localtime, now
 from django.core.paginator import Paginator
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
@@ -21,23 +19,15 @@ from django.utils import timezone
 from django.db.models import Q
 from django.views.decorators.http import require_POST
 from django.http import HttpResponseForbidden
-from django.utils.timezone import now
-from django.db.models import Count
-from django.db.models.functions import TruncDate
-from collections import defaultdict
-from collections import defaultdict
 from django.http import FileResponse, Http404
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from PyPDF2 import PdfReader, PdfWriter
-from .models import UserProfile, EncodingErrorRequest, Notification, WebsiteUploadRequest, WebsiteUploadAttachment
-from datetime import timedelta
+from .models import EncodingErrorRequest, Notification, WebsiteUploadRequest, WebsiteUploadAttachment
 from django.urls import reverse
 from math import ceil
 from .forms import WebsiteUploadRequestForm
-from django.db.models import Count, Value
-from django.db.models.functions import Concat
-
+from datetime import datetime
 
 # Create your views here.
 def loginPage(request):
@@ -1043,3 +1033,87 @@ def print_web_upload_request(request, pk):
     result_stream.seek(0)
 
     return FileResponse(result_stream, as_attachment=False, filename=f"WebUpload_{req.id}.pdf")
+
+
+#Reports starts here
+def service_request_report(request):
+    # Default: today
+    today = now().date()
+    selected_date = request.GET.get("date")
+
+    if selected_date:
+        try:
+            today = datetime.strptime(selected_date, "%Y-%m-%d").date()
+        except ValueError:
+            pass  # fallback to today's date if parsing fails
+
+    service_requests = ServiceRequest.objects.filter(
+        submission_date__date=today
+    ).order_by("submission_date")
+
+    return render(request, "reports/service_request/service_request_report.html", {
+        "service_requests": service_requests,
+        "today": today,
+    })
+
+@login_required
+def service_request_monthly_report(request):
+    # Default: current month
+    today = now()
+    month = today.month
+    year = today.year
+
+    # If user chose a month from the modal (format: YYYY-MM)
+    selected_month = request.GET.get("month")
+    if selected_month:
+        try:
+            year, month = map(int, selected_month.split("-"))
+        except ValueError:
+            pass  # fallback to current month if parsing fails
+
+    # First and last day of selected month
+    first_day = datetime(year, month, 1)
+    if month == 12:
+        last_day = datetime(year + 1, 1, 1)
+    else:
+        last_day = datetime(year, month + 1, 1)
+
+    # Query service requests for that month
+    service_requests = ServiceRequest.objects.filter(
+        submission_date__date__gte=first_day,
+        submission_date__date__lt=last_day
+    ).order_by("submission_date")
+
+    return render(request, "reports/service_request/service_request_monthly_report.html", {
+        "service_requests": service_requests,
+        "generated_date": today,
+        "month_name": first_day.strftime("%B %Y"),  # example: August 2025
+    })
+
+@login_required
+def service_request_custom_report(request):
+    # Default: today
+    today = now().date()
+    start_date_str = request.GET.get("start_date")
+    end_date_str = request.GET.get("end_date")
+
+    start_date = end_date = today
+
+    if start_date_str and end_date_str:
+        try:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+        except ValueError:
+            pass  # fallback to today if parsing fails
+
+    service_requests = ServiceRequest.objects.filter(
+        submission_date__date__gte=start_date,
+        submission_date__date__lte=end_date
+    ).order_by("submission_date")
+
+    return render(request, "reports/service_request/service_request_custom_report.html", {
+        "service_requests": service_requests,
+        "start_date": start_date,
+        "end_date": end_date,
+        "date_range_name": f"{start_date.strftime('%B %d, %Y')} to {end_date.strftime('%B %d, %Y')}",
+    })

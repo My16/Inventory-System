@@ -42,6 +42,9 @@ urlpatterns = [
     path("web-upload/<int:pk>/delete/", views.web_upload_delete, name="web_upload_delete"),
     path("web-upload/<int:pk>/receive/", views.web_upload_receive, name="web_upload_receive"),
     path("print-web-upload/<int:pk>/", views.print_web_upload_request, name="print_web_upload_request"),
+    path("reports/service-requests/", views.service_request_report, name="service_request_report"),
+    path("reports/service-request-monthly/", views.service_request_monthly_report, name="service_request_monthly_report"),
+    path("reports/service-request-custom-report/", views.service_request_custom_report, name="service_request_custom_report"),
 ]
 
 if settings.DEBUG:
