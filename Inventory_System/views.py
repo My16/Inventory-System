@@ -101,12 +101,13 @@ def homepage(request):
     user_permissions = request.session.get("user_permissions", [])
     is_it = user.groups.filter(name='IT').exists()
     display_name = user.get_full_name() if user.get_full_name() else user.username
-
-
+    offices = Office.objects.all()  # <-- add this
+    
     context = {
         "display_name": display_name,
         "user_permissions": user_permissions,
         "is_it": is_it,
+        "offices": offices,
     }
 
     return render(request, "home.html", context)
@@ -1096,6 +1097,7 @@ def service_request_custom_report(request):
     today = now().date()
     start_date_str = request.GET.get("start_date")
     end_date_str = request.GET.get("end_date")
+    office_id = request.GET.get("office")  # <-- get office filter
 
     start_date = end_date = today
 
@@ -1109,11 +1111,19 @@ def service_request_custom_report(request):
     service_requests = ServiceRequest.objects.filter(
         submission_date__date__gte=start_date,
         submission_date__date__lte=end_date
-    ).order_by("submission_date")
+    )
+
+    # Apply office filter if selected
+    if office_id and office_id.isdigit():
+        service_requests = service_requests.filter(office_id=office_id)
+
+    service_requests = service_requests.order_by("submission_date")
 
     return render(request, "reports/service_request/service_request_custom_report.html", {
         "service_requests": service_requests,
         "start_date": start_date,
         "end_date": end_date,
         "date_range_name": f"{start_date.strftime('%B %d, %Y')} to {end_date.strftime('%B %d, %Y')}",
+        "offices": Office.objects.all(),  # for dropdown
+        "selected_office": int(office_id) if office_id and office_id.isdigit() else None,
     })

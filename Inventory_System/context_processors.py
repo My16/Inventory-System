@@ -1,4 +1,5 @@
 from .models import Notification
+from .models import Office
 
 def notifications_processor(request):
     if request.user.is_authenticated:
@@ -7,4 +8,9 @@ def notifications_processor(request):
         notifications = []
     return {
         "notifications": notifications
+    }
+
+def offices_context(request):
+    return {
+        "offices": Office.objects.all()
     }

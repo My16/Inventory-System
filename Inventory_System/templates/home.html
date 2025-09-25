@@ -346,6 +346,15 @@
 
                         <label for="end-date" class="form-label mt-2">To:</label>
                         <input type="date" id="end-date" name="end_date" class="form-control" required>
+
+                        <!-- Office filter -->
+                        <label for="office" class="form-label mt-2">Office:</label>
+                        <select id="office" name="office" class="form-select">
+                            <option value="">All Offices</option>
+                            {% for office in offices %}
+                                <option value="{{ office.id }}">{{ office.office_name }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
