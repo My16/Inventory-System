@@ -117,7 +117,7 @@
 <div class="modal fade" id="editOfficeModal" tabindex="-1" aria-labelledby="editOfficeModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header">
+            <div class="modal-header bg-success text-white">
                 <h5 class="modal-title" id="editOfficeModalLabel">Edit Office</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -204,7 +204,7 @@
                 console.log("Fetching office ID:", office_id); // Debugging
 
                 // Fetch office details
-                fetch(`/get-office/${office_id}`)
+                fetch(`/get-office/${office_id}/`)
                     .then(response => response.json())
                     .then(data => {
                         console.log("Fetched Data:", data); // Debugging
@@ -216,6 +216,9 @@
 
                         // Store office ID inside a hidden input field
                         document.querySelector("#office_id").value = office_id;
+
+                        // ✅ Fill last updated field
+                        document.querySelector("#created_at").textContent = data.updated_at || "N/A";
 
                         // Show the modal
                         let editModal = new bootstrap.Modal(document.getElementById("editOfficeModal"));

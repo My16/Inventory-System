@@ -128,6 +128,7 @@ def add_office(request):
 
 # show and add
 @csrf_exempt
+@login_required
 def add_office_ajax(request):
     if request.method == 'POST':
         office_name = request.POST.get('office_name')
@@ -143,7 +144,7 @@ def add_office_ajax(request):
         
     return JsonResponse({'status': 'error', 'message': 'Invalid request'})
 
-
+@login_required
 def get_office(request, office_id):
     try:
         office = Office.objects.get(id=office_id)
@@ -151,7 +152,8 @@ def get_office(request, office_id):
             "office_name": office.office_name,
             "abbreviation": office.abbreviation if office.abbreviation else "",
             "location": office.location if office.location else "",
-            "created_at": localtime(office.created_at).strftime('%B %d, %Y, %I:%M %p')
+            "created_at": localtime(office.created_at).strftime('%B %d, %Y, %I:%M %p'),
+            "updated_at": localtime(office.updated_at).strftime('%B %d, %Y, %I:%M %p') if office.updated_at else "",
         }
         return JsonResponse(response_data)
 
@@ -161,6 +163,7 @@ def get_office(request, office_id):
 # end of show and add
 
 # delete
+@login_required
 @csrf_exempt
 def delete_office(request, office_id):
     if request.method == "DELETE":
@@ -173,6 +176,7 @@ def delete_office(request, office_id):
     return JsonResponse({"success": False, "error": "Invalid request method"})
 
 # edit office
+@login_required
 def update_office(request, office_id):
     if request.method == "POST":
         office = get_object_or_404(Office, id=office_id)
@@ -194,7 +198,7 @@ def update_office(request, office_id):
 
 # for userlist
 
-
+@login_required
 def list_users(request):
     user = request.user
     groups = Group.objects.all()
@@ -216,7 +220,7 @@ def list_users(request):
     return render(request, "createuser.html", context)
 
 # create user
-
+@login_required
 def create_user(request):
     if request.method == "POST":
         first_name = request.POST['first_name']
@@ -292,6 +296,7 @@ def delete_user(request, user_id):
 
     return JsonResponse({"success": False, "message": "Invalid request!"})
 
+@login_required
 def update_user_access(request, user_id):
     user = get_object_or_404(User, id=user_id)
 
@@ -324,7 +329,7 @@ def update_user_access(request, user_id):
     return JsonResponse({"success": False, "message": "Invalid request!"}, status=400)
 
 
-
+@login_required
 def permission_required(access_option):
     def decorator(view_func):
         @wraps(view_func)
@@ -335,6 +340,7 @@ def permission_required(access_option):
         return _wrapped_view
     return decorator
 
+@login_required
 def get_user_permissions(request, user_id):
     user = get_object_or_404(User, id=user_id)
     print(f"✅ Fetching permissions for user ID: {user_id} ({user.username})")
@@ -521,6 +527,7 @@ def cancel_service_request(request, request_id):
 
 
 # printing service request
+@login_required
 def print_service_request(request, pk):
     try:
         sr = ServiceRequest.objects.get(pk=pk)
@@ -1037,6 +1044,7 @@ def print_web_upload_request(request, pk):
 
 
 #Reports starts here
+@login_required
 def service_request_report(request):
     # Default: today
     today = now().date()
