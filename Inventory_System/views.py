@@ -102,12 +102,25 @@ def homepage(request):
     is_it = user.groups.filter(name='IT').exists()
     display_name = user.get_full_name() if user.get_full_name() else user.username
     offices = Office.objects.all()  # <-- add this
+
+    today = timezone.now().date()
+
+    # Count requests
+    today_requests = ServiceRequest.objects.filter(submission_date__date=today).count()
+    pending_requests = ServiceRequest.objects.filter(status='Pending').count()
+    in_progress_requests = ServiceRequest.objects.filter(status='In Progress').count()
+    completed_requests = ServiceRequest.objects.filter(status='Completed').count()
     
     context = {
         "display_name": display_name,
         "user_permissions": user_permissions,
         "is_it": is_it,
         "offices": offices,
+
+        'today_requests': today_requests,
+        'pending_requests': pending_requests,
+        'in_progress_requests': in_progress_requests,
+        'completed_requests': completed_requests,
     }
 
     return render(request, "home.html", context)

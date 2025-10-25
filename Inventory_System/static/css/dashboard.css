@@ -160,3 +160,50 @@ footer {
     font-size: 0.95rem; /* optional, to make it a bit bigger */
     color: #333; /* darker text for better visibility */
 }
+
+.dashboard-card {
+    border: none;
+    border-radius: 1rem;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    padding: 0.5rem 0.75rem;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+}
+
+.icon-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 65px;
+    height: 65px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #007bff, #0056d2);
+}
+
+.bg-gradient-warning {
+    background: linear-gradient(135deg, #ffc107, #ff9800);
+}
+
+.bg-gradient-info {
+    background: linear-gradient(135deg, #17a2b8, #117a8b);
+}
+
+.bg-gradient-success {
+    background: linear-gradient(135deg, #28a745, #1e7e34);
+}
+
+.dashboard-card h2 {
+    font-size: 2rem;
+}
+
+.dashboard-card h6 {
+    font-size: 0.9rem;
+    letter-spacing: 0.5px;
+}
