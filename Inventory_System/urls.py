@@ -45,6 +45,7 @@ urlpatterns = [
     path("reports/service-requests/", views.service_request_report, name="service_request_report"),
     path("reports/service-request-monthly/", views.service_request_monthly_report, name="service_request_monthly_report"),
     path("reports/service-request-custom-report/", views.service_request_custom_report, name="service_request_custom_report"),
+    path("reports/encoding-error/", views.encoding_error_report, name="encoding_error_report"),
 ]
 
 if settings.DEBUG:

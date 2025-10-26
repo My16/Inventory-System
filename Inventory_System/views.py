@@ -1179,3 +1179,25 @@ def service_request_custom_report(request):
         "offices": Office.objects.all(),  # for dropdown
         "selected_office": int(office_id) if office_id and office_id.isdigit() else None,
     })
+
+def encoding_error_report(request):
+    # Default: today
+    today = now().date()
+    selected_date = request.GET.get("date")
+
+    # If a date is selected in the GET request
+    if selected_date:
+        try:
+            today = datetime.strptime(selected_date, "%Y-%m-%d").date()
+        except ValueError:
+            pass  # fallback to today's date if invalid
+
+    # Filter encoding error requests by selected date
+    encoding_errors = EncodingErrorRequest.objects.filter(
+        date=today
+    ).order_by("time")
+
+    return render(request, "reports/encoding_error/encoding_error_report.html", {
+        "encoding_errors": encoding_errors,
+        "today": today,
+    })

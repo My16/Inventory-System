@@ -187,7 +187,11 @@
 
                                 <!-- Encoding Error -->
                                 <li><h6 class="dropdown-header text-muted">Encoding Error</h6></li>
-                                <li><a class="dropdown-item" href="#">Summary</a></li>
+                                <li>
+                                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#dailyReportModalencodingerror">
+                                        Daily Report
+                                    </a>
+                                </li>
                                 <li><a class="dropdown-item" href="#">By Department</a></li>
                                 <li><hr class="dropdown-divider"></li>
 
@@ -385,57 +389,55 @@
                             }
                         });
                     </script>
-                
+
+                    <!-- Recent Service Requests -->
+                    <div class="card mt-4 shadow-sm">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0 fw-bold text-dark">Recent Service Requests</h5>
+                            <a href="{% url 'service_request' %}" class="text-primary small fw-semibold text-decoration-none">View all requests →</a>
+                        </div>
+
+                        <div class="card-body p-0">
+                            <table class="table mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>No.</th>
+                                        <th>SERVICE CATEGORY</th>
+                                        <th>STATUS</th>
+                                        <th>REQUESTOR</th>
+                                        <th>SUBMITTED AT</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for request in recent_requests %}
+                                    <tr>
+                                        <td><strong>{{ forloop.counter }}</strong></td>
+                                        <td>{{ request.service_category.name }}</td>
+                                        <td>
+                                            <span class="badge 
+                                                {% if request.status == 'Pending' %} bg-warning text-dark 
+                                                {% elif request.status == 'In Progress' %} bg-info text-dark
+                                                {% elif request.status == 'Completed' %} bg-success
+                                                {% elif request.status == 'Cancelled' %} bg-danger
+                                                {% endif %}
+                                            ">
+                                                {{ request.status }}
+                                            </span>
+                                        </td>
+                                        <td>{{ request.requestor.get_full_name|default:request.requestor.username }}</td>
+                                        <td>{{ request.submission_date|date:"m/d/Y H:i" }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-3">No recent service requests.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 {% endblock %}
             </div>
-
-            <!-- Recent Service Requests -->
-            <div class="card mt-4 shadow-sm">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0 fw-bold text-dark">Recent Service Requests</h5>
-                    <a href="{% url 'service_request' %}" class="text-primary small fw-semibold text-decoration-none">View all requests →</a>
-                </div>
-
-                <div class="card-body p-0">
-                    <table class="table mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>No.</th>
-                                <th>SERVICE CATEGORY</th>
-                                <th>STATUS</th>
-                                <th>REQUESTOR</th>
-                                <th>SUBMITTED AT</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for request in recent_requests %}
-                            <tr>
-                                <td><strong>{{ forloop.counter }}</strong></td>
-                                <td>{{ request.service_category.name }}</td>
-                                <td>
-                                    <span class="badge 
-                                        {% if request.status == 'Pending' %} bg-warning text-dark 
-                                        {% elif request.status == 'In Progress' %} bg-info text-dark
-                                        {% elif request.status == 'Completed' %} bg-success
-                                        {% elif request.status == 'Cancelled' %} bg-danger
-                                        {% endif %}
-                                    ">
-                                        {{ request.status }}
-                                    </span>
-                                </td>
-                                <td>{{ request.requestor.get_full_name|default:request.requestor.username }}</td>
-                                <td>{{ request.submission_date|date:"m/d/Y H:i" }}</td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="6" class="text-center text-muted py-3">No recent service requests.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
         </main>
 
         <footer>
@@ -570,7 +572,28 @@
         </div>
     </div>
 
+    <!-- Daily Encoding Error Report -->
 
+    <div class="modal fade report-modal" id="dailyReportModalencodingerror" tabindex="-1" aria-labelledby="dailyReportModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <form method="get" action="{% url 'encoding_error_report' %}" target="_blank">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title" id="dailyReportModalLabel">Generate Daily Report</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <label for="report-date" class="form-label">Select Date:</label>
+                        <input type="date" id="report-date" name="date" class="form-control" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success">Generate</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <script src="{% static 'js/base.js' %}"></script>
 
