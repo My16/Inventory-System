@@ -16,7 +16,7 @@ from functools import wraps
 from .models import UserPermission, PermissionOption
 from django.contrib.auth.models import Group
 from django.utils import timezone
-from django.db.models import Q
+from django.db.models import Count
 from django.views.decorators.http import require_POST
 from django.http import HttpResponseForbidden
 from django.http import FileResponse, Http404
@@ -105,11 +105,37 @@ def homepage(request):
 
     today = timezone.now().date()
 
+    todays_requests = ServiceRequest.objects.filter(submission_date__date=today)
+
+    # Recent 5 service requests
+    recent_requests = ServiceRequest.objects.select_related('office', 'requestor').order_by('-submission_date')[:5]
+
     # Count requests
-    today_requests = ServiceRequest.objects.filter(submission_date__date=today).count()
-    pending_requests = ServiceRequest.objects.filter(status='Pending').count()
-    in_progress_requests = ServiceRequest.objects.filter(status='In Progress').count()
-    completed_requests = ServiceRequest.objects.filter(status='Completed').count()
+    today_requests = todays_requests.count()
+    pending_requests = todays_requests.filter(status='Pending').count()
+    in_progress_requests = todays_requests.filter(status='In Progress').count()
+    completed_requests = todays_requests.filter(status='Completed').count()
+    cancelled_request = todays_requests.filter(status='Cancelled').count()
+
+    status_data = [pending_requests, in_progress_requests, completed_requests, cancelled_request]
+
+    # ✅ Get IT group members
+    it_members = User.objects.filter(groups__name='IT')
+
+    # ✅ Count completed requests per IT member for today
+    completed_counts = (
+        ServiceRequest.objects.filter(
+            status='Completed',
+            assigned_to__in=it_members,
+            submission_date__date=today
+        )
+        .values('assigned_to__first_name', 'assigned_to__last_name')
+        .annotate(total_completed=Count('id'))
+        .order_by('-total_completed')
+    )
+
+    # Convert to list for easier iteration in the template
+    completed_data = list(completed_counts)
     
     context = {
         "display_name": display_name,
@@ -121,6 +147,11 @@ def homepage(request):
         'pending_requests': pending_requests,
         'in_progress_requests': in_progress_requests,
         'completed_requests': completed_requests,
+        'cancelled_requests': cancelled_request,
+        'status_data_json': status_data,
+
+        'completed_data' : completed_data,
+        'recent_requests': recent_requests,
     }
 
     return render(request, "home.html", context)
