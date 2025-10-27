@@ -1201,3 +1201,76 @@ def encoding_error_report(request):
         "encoding_errors": encoding_errors,
         "today": today,
     })
+
+@login_required
+def encoding_error_monthly_report(request):
+    # Default: current month
+    today = now()
+    month = today.month
+    year = today.year
+
+    # If user chose a month from a modal (format: YYYY-MM)
+    selected_month = request.GET.get("month")
+    if selected_month:
+        try:
+            year, month = map(int, selected_month.split("-"))
+        except ValueError:
+            pass  # fallback to current month if invalid input
+
+    # First and last day of selected month
+    first_day = datetime(year, month, 1)
+    if month == 12:
+        last_day = datetime(year + 1, 1, 1)
+    else:
+        last_day = datetime(year, month + 1, 1)
+
+    # Filter encoding error requests by month
+    encoding_errors = EncodingErrorRequest.objects.filter(
+        created_at__date__gte=first_day,
+        created_at__date__lt=last_day
+    ).order_by("created_at")
+
+    return render(request, "reports/encoding_error/encoding_error_monthly_report.html", {
+        "encoding_errors": encoding_errors,
+        "generated_date": today,
+        "month_name": first_day.strftime("%B %Y"),  # Example: "October 2025"
+    })
+
+@login_required
+def encoding_error_custom_report(request):
+    today = now().date()
+    start_date_str = request.GET.get("start_date")
+    end_date_str = request.GET.get("end_date")
+    office_id = request.GET.get("office")
+
+    # Default date range
+    start_date = end_date = today
+
+    # Parse date range from query params
+    if start_date_str and end_date_str:
+        try:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+        except ValueError:
+            pass  # fallback to today
+
+    # Base query
+    encoding_errors = EncodingErrorRequest.objects.filter(
+        date__gte=start_date,
+        date__lte=end_date
+    )
+
+    # Optional: Filter by office
+    if office_id and office_id.isdigit():
+        encoding_errors = encoding_errors.filter(office_id=office_id)
+
+    encoding_errors = encoding_errors.order_by("date", "time")
+
+    return render(request, "reports/encoding_error/encoding_error_custom_report.html", {
+        "encoding_errors": encoding_errors,
+        "start_date": start_date,
+        "end_date": end_date,
+        "date_range_name": f"{start_date.strftime('%b %d, %Y')} to {end_date.strftime('%b %d, %Y')}",
+        "offices": Office.objects.all(),
+        "selected_office": int(office_id) if office_id and office_id.isdigit() else None,
+    })

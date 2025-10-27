@@ -5,7 +5,7 @@
 <html>
     <head>
         <meta charset="UTF-8">
-        <title>Encoding Error Daily Report</title>
+        <title>Encoding Error Monthly Report</title>
         <style>
             body {
                 font-family: Arial, sans-serif;
@@ -22,6 +22,7 @@
                 border: 1px solid black;
                 padding: 5px;
                 text-align: left;
+                vertical-align: top;
             }
             th {
                 background: #f2f2f2;
@@ -70,7 +71,7 @@
                     <h4>Republic of the Philippines</h4>
                     <h4 style="font-weight: bold;">Department of Health</h4>
                     <h4>Mayor Hilarion A. Ramiro Sr. Medical Center</h4>
-                    <h5>Encoding Error {{ today|date:"F d, Y" }} Report</h5>
+                    <h5>Monthly Encoding Error Report - {{ month_name }}</h5>
                 </div>
 
                 <!-- MHARSMC Logo -->
@@ -112,9 +113,7 @@
                     <td>{{ req.status }}</td>
                 </tr>
                 {% empty %}
-                <tr>
-                    <td colspan="12" style="text-align:center;">No encoding error requests today.</td>
-                </tr>
+                <tr><td colspan="13" style="text-align:center;">No encoding errors found for {{ month_name }}.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
