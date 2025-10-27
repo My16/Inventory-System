@@ -48,6 +48,7 @@ urlpatterns = [
     path("reports/encoding-error/", views.encoding_error_report, name="encoding_error_report"),
     path("reports/encoding-error-monthly/", views.encoding_error_monthly_report, name="encoding_error_monthly_report"),
     path("reports/encoding-error-custom-report/", views.encoding_error_custom_report, name="encoding_error_custom_report"),
+    path("reports/website-upload-custom-report/", views.website_upload_custom_report, name="website_upload_custom_report"),
 ]
 
 if settings.DEBUG:

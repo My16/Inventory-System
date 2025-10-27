@@ -1274,3 +1274,32 @@ def encoding_error_custom_report(request):
         "offices": Office.objects.all(),
         "selected_office": int(office_id) if office_id and office_id.isdigit() else None,
     })
+
+@login_required
+def website_upload_custom_report(request):
+    # Default: today
+    today = now().date()
+    start_date_str = request.GET.get("start_date")
+    end_date_str = request.GET.get("end_date")
+
+    # Default range: today
+    start_date = end_date = today
+
+    if start_date_str and end_date_str:
+        try:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+        except ValueError:
+            pass  # fallback to today
+
+    uploads = WebsiteUploadRequest.objects.filter(
+        date__date__gte=start_date,
+        date__date__lte=end_date
+    ).order_by("date")
+
+    return render(request, "reports/website_upload/website_upload_custom_report.html", {
+        "uploads": uploads,
+        "start_date": start_date,
+        "end_date": end_date,
+        "date_range_name": f"{start_date.strftime('%b %d, %Y')} to {end_date.strftime('%b %d, %Y')}",
+    })

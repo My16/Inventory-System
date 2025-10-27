@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+{% load static %}
+{% load custom_filters %}
+
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Website Upload Custom Report</title>
+        <style>
+            body { font-family: Arial; font-size: 12px; margin:0; padding:10px; }
+            table { width: 100%; border-collapse: collapse; font-size: 11px; }
+            th, td { border:1px solid black; padding:5px; text-align:left; }
+            th { background:#f2f2f2; }
+            @page { size: 8.5in 13in landscape; margin:1cm; }
+            .report-header { text-align:center; margin-bottom:20px; border-bottom:2px solid #000; padding-bottom:10px; }
+            .header-flex { display:flex; justify-content:center; align-items:center; gap:40px; }
+            .header-flex img { height:70px; }
+            .header-text h4, .header-text h5 { margin:0; }
+            .header-text h4 { font-size:14px; }
+            .header-text h5 { font-size:12px; font-weight:normal; margin-top:5px; }
+        </style>
+    </head>
+    <body>
+        <div class="report-header">
+            <div class="header-flex">
+                <img src="{% static 'img/doh_logo.png' %}" alt="DOH Logo">
+                <div class="header-text">
+                    <h4>Republic of the Philippines</h4>
+                    <h4 style="font-weight:bold;">Department of Health</h4>
+                    <h4>Mayor Hilarion A. Ramiro Sr. Medical Center</h4>
+                    <h5>Website Upload Report ({{ date_range_name }})</h5>
+                </div>
+                <img src="{% static 'img/mharsmc.png' %}" alt="MHARSMC Logo">
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>Area/Section</th>
+                    <th>Prepared By</th>
+                    <th>Prepared Date</th>
+                    <th>Details of Request</th>
+                    <th>Received By</th>
+                    <th>Received Date</th>
+                    <th>Attachments</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for upload in uploads %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ upload.area_section }}</td>
+                    <td>{{ upload.prepared_by|default:"-" }}</td>
+                    <td>{{ upload.date|date:"b d, Y g:i a" }}</td>
+                    <td>{{ upload.details_of_request }}</td>
+                    <td>{{ upload.received_by|default:"-" }}</td>
+                    <td>{{ upload.received_date|date:"M d, Y"|default:"-" }}</td>
+                    <td>
+                        {% for file in upload.attachments.all %}
+                            {{ file.file|filename }}<br>
+                        {% empty %}
+                            -
+                        {% endfor %}
+                    </td>
+                </tr>
+                {% empty %}
+                    <tr><td colspan="10" style="text-align:center;">No website upload requests found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </body>
+</html>

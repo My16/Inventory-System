@@ -206,8 +206,12 @@
 
                                 <!-- Website Uploading -->
                                 <li><h6 class="dropdown-header text-muted">Website Uploading</h6></li>
-                                <li><a class="dropdown-item" href="#">Upload History</a></li>
-                                <li><a class="dropdown-item" href="#">Pending Uploads</a></li>
+                                <li>
+                                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#website_upload_customReportModal">
+                                        Custom Report
+                                    </a>
+                                </li>
+                                <!-- <li><a class="dropdown-item" href="#">Pending Uploads</a></li> -->
                             </ul>
                         </li>
                         {% endif %}
@@ -643,13 +647,13 @@
                         <input type="date" id="end-date" name="end_date" class="form-control" required>
 
                         <!-- Office filter -->
-                        <label for="office" class="form-label mt-2">Office:</label>
+                        <!-- <label for="office" class="form-label mt-2">Office:</label>
                         <select id="office" name="office" class="form-select">
                             <option value="">All Offices</option>
                             {% for office in offices %}
                                 <option value="{{ office.id }}">{{ office.office_name }}</option>
                             {% endfor %}
-                        </select>
+                        </select> -->
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -659,6 +663,45 @@
             </div>
         </div>
     </div>
+
+    <!-- Custom Website Upload Report Modal -->
+    <div class="modal fade report-modal" id="website_upload_customReportModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <!-- Use the view name we defined earlier -->
+                <form method="get" action="{% url 'website_upload_custom_report' %}" target="_blank">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title">Generate Website Upload Report</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <!-- Date Range -->
+                        <label for="start-date" class="form-label">From:</label>
+                        <input type="date" id="start-date" name="start_date" class="form-control" required>
+
+                        <label for="end-date" class="form-label mt-2">To:</label>
+                        <input type="date" id="end-date" name="end_date" class="form-control" required>
+
+                        <!-- Optional Office Filter -->
+                        <!-- <label for="office" class="form-label mt-2">Office:</label>
+                        <select id="office" name="office" class="form-select">
+                            <option value="">All Offices</option>
+                            {% for office in offices %}
+                                <option value="{{ office.id }}">{{ office.office_name }}</option>
+                            {% endfor %}
+                        </select> -->
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success">Generate</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
 
     <script src="{% static 'js/base.js' %}"></script>
 
